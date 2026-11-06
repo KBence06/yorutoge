@@ -302,5 +302,9 @@ const TOUGES = [
     ] }
 ];
 
+// economy: income scale. Rival prizes, jobs and sponsors are all multiplied by this.
+const PAY = 1.5;
+for (const tg of TOUGES) for (const rv of tg.rivals) rv.prize = Math.round(rv.prize * PAY / 1000) * 1000;
+
 const DYNO_COST = 3000;
 const FUEL_PREMIUM_COST = 2500; // per race night

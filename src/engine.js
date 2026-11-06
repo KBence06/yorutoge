@@ -117,7 +117,7 @@ function engineCurve(c, isStock) {
 }
 
 function sampleCurve(curve, rpm) {
-  const p = curve.pts; const i = clamp((rpm - 1000) / 100, 0, p.length - 1.001);
+  const p = curve.pts; const i = clamp(Number.isFinite(rpm) ? (rpm - 1000) / 100 : 0, 0, p.length - 1.001);
   const i0 = Math.floor(i), f = i - i0, a = p[i0], b = p[Math.min(i0 + 1, p.length - 1)];
   return { torque: lerp(a.torque, b.torque, f), boost: lerp(a.boost, b.boost, f), margin: lerp(a.margin, b.margin, f), baseT: lerp(a.baseT, b.baseT, f), afr: lerp(a.afr, b.afr, f) };
 }

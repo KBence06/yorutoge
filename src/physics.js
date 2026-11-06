@@ -45,7 +45,7 @@ function trackLocate(T, x, z, hint) {
 }
 
 const pac = (a, B) => Math.sin(1.4 * Math.atan(B * a));
-function angDiff(a, b) { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
+function angDiff(a, b) { let d = (a - b) % (2 * Math.PI); if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI; return d; }
 
 // ---------------- driving aids for touch screens
 // Safe speed per metre along a racing line, sized to this car's grip.
@@ -72,7 +72,8 @@ function applyAids(P, T, prof, inp, set) {
   if ((set.brakeAid || set.autoGas) && P.gear !== -1) {
     const tgt = prof.v[Math.min(N - 1, Math.floor(s + 2 + P.speed * 0.25))];
     if (set.autoGas && brake < 0.1) gas = Math.max(gas, P.speed < tgt - 0.6 ? 1 : P.speed < tgt + 0.4 ? 0.35 : 0);
-    if (set.brakeAid && P.speed > tgt + 1.2) { brake = Math.max(brake, clamp((P.speed - tgt) / 5, 0.25, 1)); gas = 0; P.aidBrake = true; } else P.aidBrake = false;
+    // only steps in when you are clearly too fast, and gently
+    if (set.brakeAid && P.speed > tgt * 1.06 + 2) { brake = Math.max(brake, clamp((P.speed - tgt * 1.06 - 2) / 6, 0.15, 0.8)); gas = 0; P.aidBrake = true; } else P.aidBrake = false;
   }
   return { steer, gas, brake, hand };
 }
@@ -111,6 +112,7 @@ class PlayerCar {
   }
   step(dt, inp) {
     this.dt = dt; this.t += dt;
+    if (!Number.isFinite(this.x + this.z + this.vx + this.vz + this.w + this.h + this.rpm + this.boost)) this.recover();
     const sp = this.sp, T = this.T, m = sp.mass, set = this.set;
     const sh = Math.sin(this.h), ch = Math.cos(this.h);
     let vLong = this.vx * sh + this.vz * ch, vLat = this.vx * ch - this.vz * sh;
@@ -272,6 +274,12 @@ class PlayerCar {
     this.y = tp.y;
     this.speed = speed; this.vLong = vLong; this.vLat = vLat;
     this.wear += dt * (0.00035 + this.slide * 0.0022) * sp.tireWear;
+    if (!Number.isFinite(this.x + this.z + this.vx + this.vz + this.w + this.h + this.rpm)) this.recover(); else this.okS = this.s;
+  }
+  // if the numbers ever break, put the car back on the road instead of freezing the run
+  recover() {
+    const s0 = clamp(Number.isFinite(this.s) ? this.s : Number.isFinite(this.okS) ? this.okS : this.T.start, 0, this.T.N - 1), p = trackPoint(this.T, s0);
+    this.s = s0; this.idx = Math.floor(s0); this.lat = 0; this.x = p.x; this.z = p.z; this.y = p.y; this.h = p.h; this.vx = this.vz = this.w = 0; this.delta = 0; this.rpm = this.sp.E.idle; this.boost = 0; this.spin = 0; this.ax = this.ay = 0;
   }
   shift(d) {
     const n = this.sp.gears.length;
@@ -286,9 +294,9 @@ class RivalCar {
   constructor(rv, T, s0, lat0, grip) {
     this.rv = rv; this.T = T; this.s = s0; this.lat = lat0; this.v = 0; this.t = 0; this.idx = Math.floor(s0);
     const M = CARS[rv.car];
-    this.mass = M.mass + 75; this.mu = M.mu * 1.04 * rv.skill * (grip || 1); this.P = rv.ps * 735.5 * 0.84;
+    this.mass = M.mass + 75; this.mu = M.mu * rv.skill * (grip || 1); this.P = rv.ps * 735.5 * 0.84;
     this.cd = M.cd * M.area; this.layout = M.layout;
-    const N = T.N; this.line = new Float32Array(N); this.vmax = new Float32Array(N);
+    const N = T.N; this.line = new Float32Array(N); this.vmax = new Float32Array(N); this.pace = new Float32Array(N).fill(1);
     for (let i = 0; i < N; i++) {
       // look slightly ahead so the apex is hit late, like a real driver
       const kA = T.ks[Math.min(N - 1, i + 6)];
@@ -296,11 +304,20 @@ class RivalCar {
       const r = 1 / Math.max(1e-4, Math.abs(T.ks[i]) * 0.86);
       this.vmax[i] = Math.min(75, Math.sqrt(this.mu * G * r));
     }
+    // nobody is perfect: in a few corners the driver lifts early or runs wide. Weaker drivers do it more often.
+    this.mistakes = 0;
+    const chance = clamp(0.36 - rv.skill * 0.42, 0.06, 0.2);
+    if (rv.id !== 'police') for (const c of findCorners(T)) {
+      if (c.sev > 4 || Math.random() >= chance) continue;
+      const f = 0.84 + Math.random() * 0.09; this.mistakes++;
+      for (let i = Math.max(0, c.s0 - 20); i < Math.min(N, c.s1 + 12); i++) this.pace[i] = Math.min(this.pace[i], f);
+    }
     // braking pass from the end backwards
     for (let i = N - 2; i >= 0; i--) {
       const dec = this.mu * G * 0.9 + G * T.slope[i];
       this.vmax[i] = Math.min(this.vmax[i], Math.sqrt(this.vmax[i + 1] * this.vmax[i + 1] + 2 * Math.max(2, dec)));
     }
+    this.react = 0.2 + Math.random() * 0.35; // reaction at the start, the player gets a fair launch
     this.x = 0; this.z = 0; this.y = 0; this.h = 0; this.yawVis = 0; this.braking = false;
     this.place();
   }
@@ -310,16 +327,27 @@ class RivalCar {
   }
   step(dt, player, band) {
     const T = this.T; this.t += dt;
+    if (this.t < this.react) { this.braking = true; return; }
     const i = clamp(Math.floor(this.s), 0, T.N - 2);
-    let target = this.vmax[i] * band;
-    // player directly ahead: follow or go around
+    let target = this.vmax[i] * this.pace[i] * band;
     const ds = player.s - this.s, dl = player.lat - this.lat;
     let latT = this.line[i];
-    if (ds > -2 && ds < 12 && Math.abs(dl) < 2.1) {
-      const room = (ROAD_HW - 1.0) - Math.abs(player.lat);
-      if (room > 1.6) latT = player.lat > 0 ? player.lat - 2.3 : player.lat + 2.3;
-      else target = Math.min(target, player.speed - 0.5 + ds * 0.3);
+    // never drive into the back of the player: brake in time if not yet out to the side
+    if (ds > 0 && ds < 40 && Math.abs(dl) < 2.15) target = Math.min(target, Math.sqrt(Math.max(0, player.speed) ** 2 + 2 * this.mu * G * 0.8 * Math.max(0, ds - 4.5)));
+    if (ds > -2 && ds < 14 && Math.abs(dl) < 2.1) {
+      // player directly ahead: go around if there is room, otherwise follow and wait for a chance
+      const want = player.lat > 0 ? player.lat - 2.5 : player.lat + 2.5;
+      if (Math.abs(want) <= ROAD_HW - 0.95) latT = want;
+      else target = Math.min(target, Math.max(0, player.speed - 0.5 + ds * 0.3));
+    } else if (Math.abs(ds) < 4.5 && Math.abs(dl) < 2.6) {
+      // side by side: leave the player a car's width instead of leaning on them
+      const away = dl > 0 ? -1 : 1, want = player.lat + away * 2.5;
+      if (Math.abs(want) <= ROAD_HW - 0.95) latT = want;
+      else if (ds > 0) target = Math.min(target, player.speed - 0.3); // no room: tuck in behind
     }
+    // a pass around the outside is a longer, slower way round
+    const off = Math.abs(latT - this.line[i]);
+    if (off > 1.2) target *= 1 - Math.min(0.07, (off - 1.2) * 0.035);
     latT = clamp(latT, -(ROAD_HW - 0.95), ROAD_HW - 0.95);
     this.lat += clamp(latT - this.lat, -2.4 * dt, 2.4 * dt);
     const acc = Math.min(this.mu * G * (this.layout === 'AWD' ? 0.95 : 0.8), this.P / (this.mass * Math.max(this.v, 4)))
@@ -330,6 +358,8 @@ class RivalCar {
     else { this.v = Math.max(target, this.v - dec * dt); this.braking = true; }
     this.v = Math.max(0, this.v);
     this.s += this.v * dt;
+    if (!Number.isFinite(this.s) || !Number.isFinite(this.lat)) { this.s = clamp(this.idx, 0, T.N - 2); this.lat = 0; this.v = 0; }
+    this.idx = Math.floor(this.s);
     this.place();
     // FR rivals swing the tail in hairpins, purely visual
     const yawT = this.layout === 'FF' ? 0 : clamp(T.ks[i] * this.v * 0.22, -0.38, 0.38);
@@ -337,7 +367,7 @@ class RivalCar {
   }
 }
 
-// circle-pair contact between player and rival
+// circle-pair contact between player and rival. Both cars get pushed by their mass, so a hit costs the one who caused it.
 function carContact(P, R) {
   const pts = (c, h) => [[c.x + Math.sin(h) * 1.15, c.z + Math.cos(h) * 1.15], [c.x - Math.sin(h) * 1.15, c.z - Math.cos(h) * 1.15]];
   const a = pts(P, P.h), b = pts(R, R.h + R.yawVis);
@@ -347,12 +377,17 @@ function carContact(P, R) {
     if (d < 1.9 && (!hit || d < hit.d)) hit = { d, nx: dx / (d || 1), nz: dz / (d || 1) };
   }
   if (!hit) return 0;
-  const pen = 1.9 - hit.d;
-  P.x += hit.nx * pen * 0.7; P.z += hit.nz * pen * 0.7;
-  const th = R.h; R.lat -= (hit.nx * Math.cos(th) - hit.nz * Math.sin(th)) * pen * 0.3;
-  const rvx = Math.sin(R.h) * R.v, rvz = Math.cos(R.h) * R.v;
-  const vn = (P.vx - rvx) * hit.nx + (P.vz - rvz) * hit.nz;
-  if (vn < 0) { P.vx -= 1.3 * vn * hit.nx; P.vz -= 1.3 * vn * hit.nz; R.v = Math.max(0, R.v * 0.97); P.w *= 0.8; if (-vn > 1.5) { P.dmgBody += -vn * 0.006 * P.sp.damageMult; return -vn; } }
+  const pen = 1.9 - hit.d, nx = hit.nx, nz = hit.nz, mP = P.sp.mass + 75, mR = R.mass || mP, kP = mR / (mP + mR), kR = mP / (mP + mR);
+  const sh = Math.sin(R.h), ch = Math.cos(R.h), along = sh * nx + ch * nz, side = nx * ch - nz * sh;
+  P.x += nx * pen * kP; P.z += nz * pen * kP;
+  R.lat -= side * pen * kR; R.s -= along * pen * kR * 0.5;
+  const vn = (P.vx - sh * R.v) * nx + (P.vz - ch * R.v) * nz;
+  if (vn < 0) {
+    const j = -1.25 * vn;
+    P.vx += nx * j * kP; P.vz += nz * j * kP; P.w *= 0.85;
+    R.v = Math.max(0, R.v - along * j * kR);
+    if (j > 1.5) { P.dmgBody += j * 0.005 * P.sp.damageMult; return j; }
+  }
   return 0;
 }
 

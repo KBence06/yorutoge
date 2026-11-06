@@ -414,34 +414,49 @@ function torqueStep(c, p, n, spec, passes) {
   const st = {
     name: 'Meghúzás', auto: false, n, spec, passes, pass: 0, step, scaleMax: Math.ceil(spec * 1.6 / (step * 2)) * step * 2,
     bolts: Array.from({ length: n }, () => ({ v: [null, null] })), last: null, orderGood: 0, orderTotal: 0, hold: null, needle: 0, msg: '', done: false, stripped: false,
-    manual: [`Csavarok: ${n} db`, `Meghúzási nyomaték: ${spec} Nm`, passes === 2 ? `1. menet: kb. a fele (${Math.round(spec / 2)} Nm), 2. menet: teljes` : null, 'Sorrend: keresztben. Mindig a szemközti csavarral folytasd, ne körbe.', 'Tartsd lenyomva a csavart, és engedd el, amikor a mutató eléri az értéket.'].filter(Boolean),
-    reset() { Object.assign(this, { pass: 0, bolts: Array.from({ length: n }, () => ({ v: [null, null] })), last: null, orderGood: 0, orderTotal: 0, hold: null, needle: 0, msg: '', done: false, stripped: false }); },
+    manual: [`Csavarok: ${n} db`, `Meghúzási nyomaték: ${spec} Nm`, passes === 2 ? `1. menet: kb. a fele (${Math.round(spec / 2)} Nm), 2. menet: teljes` : null, 'Sorrend: keresztben. Mindig a szemközti csavarral folytasd, ne körbe.', 'Tartsd lenyomva a csavart, és engedd el, amikor a mutató eléri az értéket.', 'Ha egy csavar nem lett pontos, koppints rá újra: kilazítod és újrahúzod.'].filter(Boolean),
+    // bolts of the current pass that are off the target by more than the tolerance
+    offBolts() { const ps = this.pass, target = passes === 2 && ps === 0 ? spec * 0.5 : spec, tol = passes === 2 && ps === 0 ? 0.25 : 0.04; return this.bolts.map((b, k) => k).filter(k => this.bolts[k].v[ps] != null && Math.abs(this.bolts[k].v[ps] - target) / target > tol); },
+    reset() { Object.assign(this, { lastRedo: false, pass: 0, bolts: Array.from({ length: n }, () => ({ v: [null, null] })), last: null, orderGood: 0, orderTotal: 0, hold: null, needle: 0, msg: '', done: false, stripped: false }); },
     geom(W, H) { const R = W * (n > 5 ? 0.25 : 0.21); return { W, H, cx: W / 2, cy: H * 0.31, R, br: R * 0.74, gx: W / 2, gy: H * 0.99, gr: W * 0.36 }; },
     boltPos(i, W, H) { const g = this.geom(W, H), a = -Math.PI / 2 + i * Math.PI * 2 / n; return [g.cx + Math.cos(a) * g.br, g.cy + Math.sin(a) * g.br, a]; },
     status() {
       if (this.stripped) return 'Elszakadt a menet! Menetjavító betét kell.';
-      if (this.done) { const q = this.quality(); return `${Math.round(q * 100)}% · ${q >= 0.85 ? 'Precíz munka.' : q >= 0.6 ? 'Rendben van, de nem tökéletes.' : 'Hanyag. Kotyogni vagy szivárogni fog.'}`; }
+      if (this.done) { const q = this.quality(), off = this.offBolts().length; return `${Math.round(q * 100)}% · ${q >= 0.85 ? 'Precíz munka.' : q >= 0.6 ? 'Rendben van, de nem tökéletes.' : 'Hanyag. Kotyogni vagy szivárogni fog.'}${off ? ` ${off} csavar nem pontos: koppints rá, és egyenként újrahúzhatod.` : ''}${this.msg && this.lastRedo ? ' ' + this.msg : ''}`; }
       const doneN = this.bolts.filter(b => b.v[this.pass] != null).length;
       return `${passes === 2 ? (this.pass + 1) + '. menet · ' : ''}${doneN} / ${n} csavar. ${this.msg || 'Kezdheted bármelyikkel.'}`;
     },
     buttons() {
       if (this.stripped) return [el('button', { class: 'btn primary small', onclick: () => { if (!UI.spend(6000)) return; this.reset(); } }, `Menetjavítás · ${fmtY(6000)}`)];
-      if (this.done) return [el('button', { class: 'btn small', onclick: () => this.reset() }, 'Újrahúzom')];
+      if (this.done) return [el('button', { class: 'btn small', onclick: () => this.reset() }, 'Mindet újrahúzom')];
       return [];
     },
     down(x, y, W, H) {
-      if (this.done || this.hold) return;
+      if (this.hold || this.stripped) return;
       let near = -1, nd = 1e9;
       for (let i = 0; i < n; i++) { const [bx, by] = this.boltPos(i, W, H), d = Math.hypot(x - bx, y - by); if (d < nd) { nd = d; near = i; } }
       if (near < 0 || nd > W * 0.08) return;
-      if (this.bolts[near].v[this.pass] != null) { this.msg = 'Ezt már meghúztad ebben a menetben.'; return; }
+      if (this.bolts[near].v[this.pass] != null) {
+        // already done in this pass: loosen it and pull it again, one bolt at a time
+        if (!this.offBolts().includes(near)) { this.msg = 'Ez a csavar már pontos.'; this.lastRedo = true; return; }
+        this.hold = { i: near, t0: performance.now(), redo: true }; Audio2.ratchet(true); return;
+      }
+      if (this.done) return;
       this.hold = { i: near, t0: performance.now() }; Audio2.ratchet(true);
     },
     up() {
       if (!this.hold) return;
       Audio2.ratchet(false);
-      const i = this.hold.i, val = this.needle; this.hold = null;
+      const i = this.hold.i, val = this.needle, redo = this.hold.redo; this.hold = null;
       const target = passes === 2 && this.pass === 0 ? spec * 0.5 : spec;
+      if (redo) {
+        this.bolts[i].v[this.pass] = val; this.lastRedo = true;
+        if (val > spec * 1.3) { this.stripped = true; Audio2.clunk(); return; }
+        const e2 = (val - target) / target;
+        this.msg = Math.abs(e2) <= 0.04 ? `Újrahúzva: ${val.toFixed(0)} Nm, most pontos.` : `Újrahúzva: ${val.toFixed(0)} Nm, ${e2 > 0 ? 'még mindig szoros' : 'még mindig laza'}.`;
+        Audio2.click(); return;
+      }
+      this.lastRedo = false;
       const remaining = this.bolts.map((b, k) => k).filter(k => this.bolts[k].v[this.pass] == null);
       let om = '';
       if (this.last != null && remaining.length > 1) {
@@ -453,7 +468,8 @@ function torqueStep(c, p, n, spec, passes) {
       this.bolts[i].v[this.pass] = val; this.last = i;
       if (val > spec * 1.3) { this.stripped = true; Audio2.clunk(); return; }
       const err = (val - target) / target;
-      this.msg = (Math.abs(err) <= 0.08 ? `${val.toFixed(0)} Nm, pontos. ` : err > 0 ? `${val.toFixed(0)} Nm, túl szoros. ` : `${val.toFixed(0)} Nm, laza. `) + om;
+      const tol = passes === 2 && this.pass === 0 ? 0.25 : 0.04;
+      this.msg = (Math.abs(err) <= tol ? `${val.toFixed(0)} Nm, pontos. ` : `${val.toFixed(0)} Nm, ${err > 0 ? 'túl szoros' : 'laza'}. Koppints rá újra, ha újrahúznád. `) + om;
       Audio2.click();
       if (this.bolts.every(b => b.v[this.pass] != null)) {
         if (this.pass + 1 < passes) { this.pass++; this.last = null; this.msg = 'Első menet kész. Most a teljes nyomaték, ugyanígy keresztben.'; }
@@ -483,7 +499,7 @@ function torqueStep(c, p, n, spec, passes) {
         const v = b.v[this.pass] != null ? b.v[this.pass] : (this.pass > 0 ? b.v[this.pass - 1] : null);
         const target = passes === 2 && (b.v[this.pass] != null ? this.pass : this.pass - 1) === 0 ? spec * 0.5 : spec;
         let ring = '#555b66';
-        if (b.v[this.pass] != null || (this.done && v != null)) { const err = Math.abs(v - target) / target; ring = err <= 0.08 ? '#8fe36b' : err <= 0.2 ? '#ffa733' : '#ff3d4f'; }
+        if (b.v[this.pass] != null || (this.done && v != null)) { const err = Math.abs(v - target) / target, tl = target < spec ? 0.25 : 0.04; ring = err <= tl ? '#8fe36b' : err <= 0.2 ? '#ffa733' : '#ff3d4f'; }
         else if (this.pass > 0) ring = '#4ee6d4';
         const r = W * (n > 6 ? 0.034 : 0.045);
         const spin = this.hold && this.hold.i === i ? -this.needle / this.scaleMax * 3 : 0;

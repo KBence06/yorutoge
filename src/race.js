@@ -77,6 +77,8 @@ const Race = {
     const dpr = window.devicePixelRatio || 1;
     renderer.setPixelRatio(set.gfx === 'low' ? 0.55 : set.gfx === 'mid' ? Math.min(1.25, dpr) : Math.min(2, dpr));
     renderer.domElement.className = 'three';
+    // a phone can run out of graphics memory; show what happened instead of a frozen picture
+    renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.contextLost(); }, false);
     root.append(renderer.domElement);
     if (set.gfx === 'low') root.append(el('div', { class: 'scan' }));
     const scene = this.scene = new THREE.Scene();
@@ -591,9 +593,23 @@ const Race = {
 
   // ---------------------------------------------------------------- loop
   frame(now) {
+    try { this.frameInner(now); this.errN = 0; }
+    catch (e) {
+      console.error(e); this.errN = (this.errN || 0) + 1;
+      if (this.errN === 30 && this.active) {
+        this.paused = true; Audio2.stopEngine(); Audio2.siren(0, 0); Audio2.rain(0);
+        $('#race').append(el('div', { class: 'intro' }, el('div', { class: 'card' }, el('div', { class: 'vs' }, 'Elakadt a futam'),
+          el('div', { class: 'line' }, 'Programhiba történt, ezért megállt a játék. Ezt a futamot nem számoljuk. Ha megírod nekem az alábbi sort, ki tudom javítani.'),
+          el('div', { class: 'muted', style: 'font-family:var(--f-crt);font-size:15px;user-select:text;-webkit-user-select:text;max-width:60ch;word-break:break-word' }, String(e && (e.stack || e.message) || e).split('\n').slice(0, 2).join(' · ')),
+          el('button', { class: 'btn primary', onclick: () => this.teardown() }, 'Vissza a garázsba'))));
+      }
+    }
+  },
+  frameInner(now) {
     let dt = Math.min(0.05, (now - this.last) / 1000); this.last = now; const wall = this.lastWall; this.lastWall = now;
     if (this.paused) { if (this.photo) this.photoRender(); else this.renderer.render(this.scene, this.cam); return; }
     const P = this.P, R = this.R, T = this.T, H = 1 / 120;
+    this.perf(now);
     if (this.phase === 'count') {
       this.count -= Math.min(0.25, (now - (wall || now)) / 1000);
       const n = Math.ceil(this.count - 0.6);
@@ -608,7 +624,7 @@ const Race = {
       if (this.phase === 'done') { P.step(H, { steer: 0, gas: 0, brake: 0.6, hand: false }); if (R) R.step(H, P, 0.7); continue; }
       P.step(H, applyAids(P, T, this.aid, inp, this.set));
       if (R) {
-        const gap = R.s - P.s, band = gap > 80 ? 0.97 : gap < -60 ? 1.03 : 1;
+        const gap = R.s - P.s, band = gap > 150 ? 0.95 : gap > 70 ? 0.975 : 1; // no catch-up boost when the rival is behind
         R.step(H, P, band);
         const hit = carContact(P, R); if (hit > 1.5) Audio2.impact(hit);
       }
@@ -819,6 +835,32 @@ const Race = {
       arrived.length ? el('p', { class: 'muted', style: 'margin:0' }, `Reggelre megjött: ${arrived.map(o => PART[o.pid].name).join(', ')}.`) : null,
       el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: () => UI.close() }, 'Vissza'))]);
   },
+  // ---------------------------------------------------------------- keeping it smooth on a phone
+  // If frames take too long, render fewer pixels; when there is headroom again, go back up.
+  perf(now) {
+    const r = this.renderer; if (!r) return;
+    const p = this.pf || (this.pf = { ema: 17, t: now, last: now, max: r.getPixelRatio(), pr: r.getPixelRatio() });
+    const d = Math.min(200, now - p.last); p.last = now; p.ema += (d - p.ema) * 0.05;
+    if (now - p.t < 1500) return; p.t = now;
+    let pr = p.pr;
+    if (p.ema > 40 && pr > 0.5) pr = Math.max(0.5, pr * 0.82);
+    else if (p.ema < 21 && pr < p.max) pr = Math.min(p.max, pr * 1.08);
+    if (pr !== p.pr) { p.pr = pr; r.setPixelRatio(pr); this.resize(); }
+    if (this.mirror) this.mirror.every = p.ema > 40 ? 5 : S.settings.gfx === 'low' ? 4 : 3;
+  },
+  contextLost() {
+    if (!this.active || this.lostShown) return; this.lostShown = true;
+    this.paused = true; Audio2.stopEngine(); Audio2.rain(0); Audio2.siren(0, 0);
+    const tg = this.tg, rv = this.rv, mode = this.mode, opts = this.video, gfx = S.settings.gfx;
+    const lower = gfx === 'high' ? 'mid' : 'low';
+    const retry = () => { S.settings.gfx = lower; save(); this.teardown(); setTimeout(() => Race.start(tg, rv, mode, opts), 60); };
+    $('#race').append(el('div', { class: 'intro' }, el('div', { class: 'card' }, el('div', { class: 'vs' }, 'Megállt a kép'),
+      el('div', { class: 'line' }, 'A telefon kifogyott a grafikus memóriából, ezért leállt a 3D-s nézet. Ezt a futamot nem számoljuk, nem vesztettél semmit.'),
+      el('div', { class: 'row', style: 'justify-content:center' },
+        gfx !== 'low' ? el('button', { class: 'btn primary', onclick: retry }, `Újra, ${lower === 'mid' ? 'közepes' : 'retró'} grafikával`) : null,
+        el('button', { class: 'btn', onclick: () => this.teardown() }, 'Vissza')))));
+  },
+
   // ---------------------------------------------------------------- drift scoring
   driftStep(dt) {
     const P = this.P, D = this.dr;
@@ -944,7 +986,7 @@ const Race = {
     if (this.renderer) { this.renderer.dispose(); this.renderer.forceContextLoss && this.renderer.forceContextLoss(); }
     CarModel.reset();
     this.cup = null; this.splashT = 0;
-    this.renderer = null; this.scene = null; this.disposables = null; this._glow = null; this.camInit = false; this.paused = false; this.photo = null; this.photoCam = null; this.dr = null;
+    this.renderer = null; this.scene = null; this.disposables = null; this._glow = null; this.camInit = false; this.paused = false; this.photo = null; this.photoCam = null; this.dr = null; this.pf = null; this.lostShown = false; this.errN = 0;
     const root = $('#race'); root.replaceChildren(); root.hidden = true; root.className = '';
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
     UI.render();

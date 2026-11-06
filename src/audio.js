@@ -35,7 +35,7 @@ const Audio2 = {
     this.eng = { g, lp, o1, o2, o3, ng, bp, wh, whg, tg, wg, nodes: [o1, o2, o3, n, wh, tn, wn], fire: E.rotary ? 2 : E.cyl / 2, lastBoost: 0, rotary: E.rotary };
   },
   setEngine(rpm, thr, boost, slip, speed) {
-    const e = this.eng; if (!e) return; const t = this.ctx.currentTime;
+    const e = this.eng; if (!e || !Number.isFinite(rpm + thr + boost + slip + speed)) return; const t = this.ctx.currentTime;
     const f = Math.max(20, rpm / 60 * e.fire);
     e.o1.frequency.setTargetAtTime(f, t, 0.02); e.o2.frequency.setTargetAtTime(f * 0.5, t, 0.02); e.o3.frequency.setTargetAtTime(f * 2, t, 0.02);
     e.lp.frequency.setTargetAtTime(280 + thr * 1900 + rpm * 0.16, t, 0.04);
@@ -98,6 +98,7 @@ const Audio2 = {
       o.start(); o2.start(); lfo.start(); this.sir = { o, o2, lfo, g, lp };
     }
     if (!this.sir) return;
+    if (!Number.isFinite(dist)) dist = 999;
     const k = level * clamp(1 - dist / 260, 0.04, 1);
     this.sir.g.gain.setTargetAtTime(k * 0.05, t, 0.15); this.sir.lp.frequency.setTargetAtTime(700 + k * 1600, t, 0.2);
     if (level <= 0.01) { const s2 = this.sir; this.sir = null; s2.g.gain.setTargetAtTime(0, t, 0.1); setTimeout(() => { for (const x of [s2.o, s2.o2, s2.lfo]) try { x.stop(); } catch (e) {} }, 600); }

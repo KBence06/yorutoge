@@ -1,11 +1,11 @@
 // ===================== WORK: gas station, tofu run, service jobs, sponsor deals =====================
 const NEIGHBOURS = ['Takeda-san', 'Ono-san', 'Iwasaki-san', 'Morita-san', 'Kaneko-san', 'Sugimoto-san', 'Hayashi-san', 'Nomura-san'];
 const SVC_JOBS = [
-  { pid: 'tire0', title: 'Kerékcsere', ask: 'Lekopott az első gumi, cserélnéd?', pay: 9000 },
-  { pid: 'pads1', title: 'Fékbetét', ask: 'Nyikorog a fék, a lányom fél tőle.', pay: 12000 },
-  { pid: 'exhaust1', title: 'Kipufogócsere', ask: 'Átrozsdált a dob, úgy szól, mint egy traktor.', pay: 14000 },
-  { pid: 'springs1', title: 'Rugócsere', ask: 'Leült a hátulja, a szomszéd szerint törött a rugó.', pay: 16000 },
-  { pid: 'intake1', title: 'Sportszűrő', ask: 'A fiam szerint ettől gyorsabb lesz. Tegyük fel.', pay: 7000 }
+  { pid: 'tire0', title: 'Kerékcsere', ask: 'Lekopott az első gumi, cserélnéd?', pay: 13500 },
+  { pid: 'pads1', title: 'Fékbetét', ask: 'Nyikorog a fék, a lányom fél tőle.', pay: 18000 },
+  { pid: 'exhaust1', title: 'Kipufogócsere', ask: 'Átrozsdált a dob, úgy szól, mint egy traktor.', pay: 21000 },
+  { pid: 'springs1', title: 'Rugócsere', ask: 'Leült a hátulja, a szomszéd szerint törött a rugó.', pay: 24000 },
+  { pid: 'intake1', title: 'Sportszűrő', ask: 'A fiam szerint ettől gyorsabb lesz. Tegyük fel.', pay: 10500 }
 ];
 const SPONSORS = [
   { id: 'kami', brand: 'Kaminari Works', task: 'Fuss 1:24 alatt a Kurozawa-tōgén (időmérő).', pay: 40000, test: () => (S.best.kurozawa || 999) < 84, prog: () => S.best.kurozawa ? `legjobb: ${fmtTime(S.best.kurozawa)}` : 'még nincs időd' },
@@ -18,7 +18,8 @@ const SPONSORS = [
   { id: 'kansai', brand: 'Kansai Drift Club', task: 'Érj el legalább A értékelést drift edzésen vagy forgatáson.', pay: 50000, test: () => ['A', 'S', 'SS'].includes(S.stats.driftGrade), prog: () => S.stats.driftGrade ? `legjobb értékelés: ${S.stats.driftGrade}` : 'még nem driftedtél' },
   { id: 'nightpass', brand: 'NIGHT PASS', task: 'Címlapsztori: építs 300 LE fölötti autót.', pay: 100000, test: () => S.cars.some(cc => carSpec(cc).ps >= 300), prog: () => `legerősebb: ${Math.round(Math.max(...S.cars.map(cc => carSpec(cc).ps)))} LE` }
 ];
-const TOFU = { kurozawa: { pay: 12000, target: 88 }, mikazuki: { pay: 16000, target: 100 }, okami: { pay: 22000, target: 106 }, kasumi: { pay: 28000, target: 132 } };
+for (const o of SPONSORS) o.pay = Math.round(o.pay * PAY / 1000) * 1000;
+const TOFU = { kurozawa: { pay: 18000, target: 88 }, mikazuki: { pay: 24000, target: 100 }, okami: { pay: 33000, target: 106 }, kasumi: { pay: 42000, target: 132 } };
 
 function seeded(seed) { let r = seed * 9301 + 49297; return () => (r = (r * 9301 + 49297) % 233280) / 233280; }
 
@@ -39,11 +40,11 @@ const Jobs = {
     const card = (id, kanji, title, desc, pay, done, btn, extra) => el('article', { class: 'job' + (done ? ' done' : '') },
       el('div', { class: 'job-k' }, kanji), el('div', { class: 'job-b' }, el('h3', null, title), el('p', null, desc), extra || null,
         el('div', { class: 'job-f' }, el('span', { class: 'job-pay' }, pay), done ? el('span', { class: 'tag ok' }, 'Mára kész') : btn)));
-    g.append(card('gas', '給油', 'Benzinkút · Sora Oil', 'Teljes kiszolgálás, ahogy Japánban szokás. Öt vásárló: jó pisztoly, pontos mennyiség, tiszta szélvédő. A borravaló a gyorsaságon és a pontosságon múlik.', '¥ 10–16 ezer', J.done.gas,
+    g.append(card('gas', '給油', 'Benzinkút · Sora Oil', 'Teljes kiszolgálás, ahogy Japánban szokás. Öt vásárló: jó pisztoly, pontos mennyiség, tiszta szélvédő. A borravaló a gyorsaságon és a pontosságon múlik.', '¥ 15–25 ezer', J.done.gas,
       el('button', { class: 'btn primary small', onclick: () => GasStation.open() }, 'Műszak kezdése')));
     const tg = TOUGES.filter(t => S.rep >= t.reqRep);
     const ready = raceReadiness(car());
-    g.append(card('tofu', '豆腐', 'Hajnali tofuszállítás', `A Fujimura tofubolt rendelése a hegyen át. Saját autóval, egy pohár vízzel a műszerfalon. Kiloccsan a víz: levonás. Szalagkorlát: összetört tofu.${ready ? ' ' + ready : ''}`, '¥ 12–30 ezer', J.done.tofu,
+    g.append(card('tofu', '豆腐', 'Hajnali tofuszállítás', `A Fujimura tofubolt rendelése a hegyen át. Saját autóval, egy pohár vízzel a műszerfalon. Kiloccsan a víz: levonás. Szalagkorlát: összetört tofu.${ready ? ' ' + ready : ''}`, '¥ 18–60 ezer', J.done.tofu,
       el('div', { class: 'row' }, ...tg.map(t => el('button', { class: 'btn small primary', disabled: !!ready, onclick: () => { J.done.tofu = true; save(); Race.start(t, null, 'tofu'); } }, t.name.replace('-tōge', '').replace('-zaka', '')))), null));
     const V = this.videoJob(J);
     g.append(card('video', '撮影', 'Forgatás · Hashiriya Video', `A 走り屋ビデオ stábja ma éjjel a ${V.tg.name}n forgat (${dirName(V.tg)}). Kamerák a kanyarokban, a kazetta a videotékákba megy. Legalább ${fmtPts(V.target)} driftpont kell. Az utat lezárják, rendőr nem lesz.${CARS[car().model].layout === 'FF' ? ' Elsőkerekes autóval nagyon nehéz lesz.' : ''}${ready ? ' ' + ready : ''}`,
@@ -82,7 +83,7 @@ const Jobs = {
     if (!J.video) {
       const rnd = seeded(S.day * 13 + 5), open = TOUGES.filter(t => S.rep >= t.reqRep), t0 = open[Math.floor(rnd() * open.length)] || TOUGES[0];
       const km = trackLength(t0) / 1000, r = Math.min(S.rep, 220);
-      J.video = { id: t0.id, rev: rnd() < 0.35, target: Math.round((900 + r * 10) * km / 100) * 100, pay: Math.round((10000 + km * 6000 + r * 70) / 1000) * 1000 };
+      J.video = { id: t0.id, rev: rnd() < 0.35, target: Math.round((900 + r * 10) * km / 100) * 100, pay: Math.round((10000 + km * 6000 + r * 70) * PAY / 1000) * 1000 };
     }
     const t0 = TOUGES.find(t => t.id === J.video.id) || TOUGES[0];
     return { tg: tougeDir(t0, J.video.rev), target: J.video.target, pay: J.video.pay };
@@ -227,7 +228,7 @@ const GasStation = {
     if (this.custT > 45) { tip = Math.round(tip / 2); lines.push('Sokáig tartott, a vásárló az óráját nézte.'); }
     tip = Math.round(tip / 10) * 10;
     if (tip >= 400) tip += 200;
-    const pay = 2000;
+    const pay = 3000; tip = Math.round(tip * PAY / 10) * 10;
     this.wage += pay; this.tips += tip; if (tip > 0) this.tipCount++;
     lines.push(tip ? `Borravaló: ${fmtY(tip)} · „${tip >= 500 ? 'Ilyen kiszolgálás már nincs sehol!' : 'Köszönöm.'}”` : 'Borravaló nem volt.');
     this.result = { pay, tip, lines };

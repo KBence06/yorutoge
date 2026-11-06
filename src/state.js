@@ -21,7 +21,7 @@ function newCar(model, paint) {
 
 function defaultState() {
   return {
-    v: 1, money: 350000, rep: 0, day: 1, t: 0,
+    v: 1, money: 450000, rep: 0, day: 1, t: 0,
     cars: [newCar('sprint16', '#e9e6dc')], active: 0,
     inv: [], orders: [],
     decor: { posterL: 'p_touge', posterR: null, neon: null, shelf: 's_oil', floorL: 'f_tires', floorR: null, floor: 'fl_concrete', light: 'l_cold' },
@@ -49,6 +49,8 @@ function sanitize(s) {
     c.cond = Object.assign({ engine: 1, body: 1, tires: 1, clutch: 1 }, c.cond || {});
     c.parts = c.parts || {};
   }
+  // v9: the beginner preset no longer brakes for you
+  if (!s.settings.mig9) { if (s.settings.aid === 'kezdo') s.settings.brakeAid = false; s.settings.mig9 = true; }
   if (!s.cars.length) s.cars = d.cars;
   if (s.active >= s.cars.length) s.active = 0;
   return s;

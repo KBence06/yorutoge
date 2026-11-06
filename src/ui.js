@@ -86,10 +86,10 @@ const UI = {
       el('div', { class: 'row', style: 'grid-column:1/-1' }, ...opts.map(([v, n]) => el('button', { class: 'chip', 'aria-pressed': st[key] === v ? 'true' : 'false', onclick: () => { st[key] = v; if (after) after(v); save(); this.settings(); } }, n))));
     const presets = {
       konnyu: { abs: true, assist: true, tcs: true, esc: true, brakeAid: true, steerAid: 'strong', autoGas: true },
-      kezdo: { abs: true, assist: true, tcs: true, esc: true, brakeAid: true, steerAid: 'weak', autoGas: false },
+      kezdo: { abs: true, assist: true, tcs: true, esc: true, brakeAid: false, steerAid: 'weak', autoGas: false },
       halado: { abs: true, assist: true, tcs: false, esc: false, brakeAid: false, steerAid: 'off', autoGas: false },
       profi: { abs: false, assist: false, tcs: false, esc: false, brakeAid: false, steerAid: 'off', autoGas: false } };
-    const aidHint = { konnyu: 'Gázt ad, fékez a kanyar előtt és tartja az ívet. Te csak terelgetsz, és bármikor felülbírálhatod.', kezdo: 'Fékez a kanyar előtt és segít az íven, a gáz a tiéd. A kocsi nem pördül ki magától.', halado: 'Blokkolásgátló és enyhe ellenkormány. Driftelni már lehet, de figyelni kell.', profi: 'Semmi segítség. Ahogy a 90-es évek elején.', egyeni: 'Saját beállítás az alábbi kapcsolókkal.' }[st.aid] || '';
+    const aidHint = { konnyu: 'Gázt ad, fékez a kanyar előtt és tartja az ívet. Te csak terelgetsz, és bármikor felülbírálhatod.', kezdo: 'Segít az íven, és a kocsi nem pördül ki magától. A gáz és a fék a tiéd: magától nem fékez.', halado: 'Blokkolásgátló és enyhe ellenkormány. Driftelni már lehet, de figyelni kell.', profi: 'Semmi segítség. Ahogy a 90-es évek elején.', egyeni: 'Saját beállítás az alábbi kapcsolókkal.' }[st.aid] || '';
     const sensBox = el('div', { class: 'slider', style: 'margin:0' },
       el('label', { for: 'set-sens' }, 'Kormány érzékenysége'), el('output', null, Math.round((st.sens || 1) * 100) + '%'),
       el('input', { type: 'range', id: 'set-sens', min: 0.5, max: 1.6, step: 0.05, value: st.sens || 1, oninput: (e) => { st.sens = parseFloat(e.target.value); e.target.previousSibling.textContent = Math.round(st.sens * 100) + '%'; save(); } }),
@@ -102,7 +102,7 @@ const UI = {
         sel('auto', 'Váltó', [[true, 'Automata'], [false, 'Manuális']]),
         sel('notes', 'Itiner', [[true, 'Be'], [false, 'Ki']], 'A következő kanyar iránya, élessége (1 = leglassabb) és távolsága.'),
         sel('steerAid', 'Kormányasszisztens', [['off', 'Ki'], ['weak', 'Gyenge'], ['strong', 'Erős']], 'Az ideális ív felé húzza a kormányt. A te kormányzásod mindig erősebb nála.', () => { st.aid = 'egyeni'; }),
-        tog('brakeAid', 'Fékasszisztens', 'Lassít, ha túl gyorsan érkezel a kanyarba. A tábla is pirosan jelez.'),
+        tog('brakeAid', 'Fékasszisztens', 'Csak akkor fékez helyetted, ha jóval túl gyorsan érkezel a kanyarba. Kikapcsolva soha nem fékez magától.'),
         tog('autoGas', 'Automata gáz', 'Magától gyorsít, ha nem fékezel. Jobb hüvelykujj csak a féké.'),
         tog('esc', 'Menetstabilizáló', 'Visszatereli az autót, ha a far elkezd kitörni.'),
         tog('abs', 'Blokkolásgátló', 'Fékezéskor nem állnak le a kerekek, kormányozható marad az autó.'),
