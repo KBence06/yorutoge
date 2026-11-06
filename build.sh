@@ -51,7 +51,7 @@ echo '<script>'
 for f in $FILES; do cat src/$f.js; echo; done
 echo '</script>'
 if [ "$MODE" == "netlify" ]; then
-  echo "<script>if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>"
+  echo "<script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>"
 fi
 if [ "$MODE" != "artifact" ]; then echo '</body></html>'; fi
 } > $OUT

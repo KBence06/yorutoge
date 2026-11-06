@@ -30,3 +30,9 @@ bash build.sh offline     # yoru-toge-offline.html, internet nélkül is fut (a 
 bash build.sh standalone  # yoru-toge.html, egyetlen fájl, a three.js-t netről tölti
 bash build.sh netlify     # dist/, pontosan az, ami a Netlify-ra kerül
 ```
+
+## Mentések
+
+Minden változat a saját helyére ment: a Claude-ban futó játék a Claude-os fiókodba,
+a Netlify-os és a helyi fájl a böngésző tárolójába. A Beállítások → **Mentés átvitele**
+résznél kóddal vagy fájllal átviheted az állást egyikből a másikba.

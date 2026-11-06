@@ -36,11 +36,11 @@ const dirName = tg => tg.dir === 'down' ? 'völgymenet' : 'hegymenet';
 
 // ---- police attention: racing raises it, quiet nights cool it down
 function heatGain(mode, c, res) {
-  if (mode === 'tofu') return 0;
-  let h = mode === 'battle' || mode === 'meet' ? 13 : 6;
+  if (mode === 'tofu' || mode === 'video') return 0; // the film crew has a permit, the tofu run is just a delivery
+  let h = mode === 'battle' || mode === 'meet' ? 13 : mode === 'drift' ? 8 : 6;
   if (c.parts.exhaust) h += c.parts.exhaust.id === 'exhaust2' ? 4 : 2;
   if (c.parts.neon) h += 2;
-  if (res === 'win' && mode !== 'practice') h += 2;
+  if (res === 'win' && (mode === 'battle' || mode === 'meet')) h += 2;
   return h;
 }
 function policeChance() {
@@ -97,3 +97,14 @@ class PoliceCar extends RivalCar {
     this.yawVis += (clamp(angDiff(ah, this.h) * 0.4, -0.3, 0.3) - this.yawVis) * Math.min(1, dt * 3);
   }
 }
+
+// ---- drifting: the aids that fight a slide are switched off, an optional helper holds the angle instead
+function driftSet() {
+  return Object.assign({}, S.settings, { esc: false, tcs: false, assist: false, brakeAid: false, autoGas: false, steerAid: 'off', driftAid: S.settings.driftAid !== false });
+}
+const fmtPts = n => Math.round(n).toLocaleString('hu-HU').replace(/,/g, ' ');
+// judged per kilometre so a long pass is not worth more just for being long
+const DRIFT_GRADES = [['SS', 8500], ['S', 6000], ['A', 4000], ['B', 2400], ['C', 1200], ['D', 0]];
+function driftGrade(perKm) { for (const [g, v] of DRIFT_GRADES) if (perKm >= v) return g; return 'D'; }
+// the date burnt into the tape: the game starts in October 1998
+function tapeDate(day) { const d = new Date(1998, 9, day || 1); return d; }

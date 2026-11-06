@@ -111,6 +111,9 @@ const UI = {
         sel('gfx', 'Grafika', [['low', 'Retró'], ['mid', 'Közepes'], ['high', 'Éles']]),
         sel('cam', 'Kamera', [['chase', 'Követő'], ['near', 'Közeli'], ['hood', 'Motorháztető']]),
         sel('mirror', 'Visszapillantó tükör', [[true, 'Be'], [false, 'Ki']], 'A képernyő tetején mutatja, ki jön mögötted. Gyengébb telefonon kikapcsolva folyékonyabb.')),
+      el('div', { class: 'panel', style: 'margin:12px 0' }, el('h3', { style: 'margin:0 0 4px' }, 'Mentés átvitele'),
+        el('p', { class: 'muted', style: 'margin:0 0 10px;font-size:12.5px' }, 'A Claude-ban futó és a telefonra telepített játék külön menti az állást. Kóddal vagy fájllal átviheted a garázsodat egyikből a másikba.'),
+        el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => SaveXfer.exportUI() }, 'Mentés kimentése'), el('button', { class: 'btn small', onclick: () => SaveXfer.importUI() }, 'Mentés betöltése'))),
       el('div', { class: 'row' }, el('button', { class: 'btn danger small', onclick: () => this.confirmReset() }, 'Új játék'))]);
     $('#sheet').scrollTop = keep;
   },
@@ -409,6 +412,8 @@ const UI = {
       if (!locked) {
         body.append(dirSeg);
         body.append(el('div', { class: 'row' }, el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(tg, null) }, 'Időmérő edzés'), el('span', { class: 'muted num' }, best ? `Legjobb: ${fmtTime(best)}` : 'Még nincs mért köröd')));
+        const dbest = (S.driftBest || {})[trackKey(tg)];
+        body.append(el('div', { class: 'row' }, el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(tg, null, 'drift') }, 'Drift edzés'), el('span', { class: 'muted num' }, dbest ? `Legjobb: ${fmtPts(dbest)} pont` : 'Még nincs driftpontod')));
         for (const rv of tg.rivals) {
           const beat = S.wins[winKey(rv, tg)], rl = S.rep < rv.reqRep, f = rev ? 0.6 : 1, prize = Math.round(rv.prize * f * W.bonus / 1000) * 1000;
           body.append(el('div', { class: 'rival' },
@@ -528,3 +533,74 @@ function paintThumbs(root) {
     drawCarSide(g, cc, r.width / 2, r.height * 0.86, len);
   }
 }
+
+// ---------------------------------------------------------------- moving a save between the Claude page and the installed app
+const b64enc = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const b64dec = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const SaveXfer = {
+  async encode(ghosts) {
+    const data = Object.assign({}, S); if (!ghosts) data.ghosts = {};
+    const json = JSON.stringify(data);
+    try {
+      if (window.CompressionStream) {
+        const buf = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+        return 'YT1:' + b64enc(new Uint8Array(buf));
+      }
+    } catch (e) {}
+    return 'YT0:' + b64enc(new TextEncoder().encode(json));
+  },
+  async decode(text) {
+    const t = (text || '').trim();
+    let json;
+    if (t.startsWith('{')) json = t;
+    else {
+      const m = /^YT([01]):([\s\S]+)$/.exec(t); if (!m) throw new Error('Ez nem Yoru Tōge mentéskód.');
+      const bytes = b64dec(m[2].replace(/\s+/g, ''));
+      json = m[1] === '1' ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text() : new TextDecoder().decode(bytes);
+    }
+    const o = JSON.parse(json);
+    if (!o || !Array.isArray(o.cars) || !o.cars.length || typeof o.money !== 'number' || o.cars.some(c => !CARS[c.model])) throw new Error('A kód sérült vagy hiányos.');
+    return o;
+  },
+  summary(o) { return `${o.day}. nap · ${fmtY(o.money)} · ${o.rep} hírnév · ${o.cars.length} autó`; },
+  exportUI() {
+    let ghosts = false;
+    const ta = el('textarea', { class: 'xfer-code', readonly: true, rows: 5, 'aria-label': 'Mentéskód', spellcheck: 'false' });
+    const info = el('div', { class: 'muted', style: 'font-size:12.5px' });
+    const fill = async () => { ta.value = 'Készül…'; const c = await this.encode(ghosts); ta.value = c; info.textContent = `${Math.round(c.length / 1024)} kB${ghosts ? ', szellemautókkal' : ''}`; };
+    const copy = async () => {
+      try { await navigator.clipboard.writeText(ta.value); toast('Kód kimásolva.', 'good'); return; } catch (e) {}
+      try { ta.removeAttribute('readonly'); ta.select(); const ok = document.execCommand('copy'); ta.setAttribute('readonly', ''); if (ok) { toast('Kód kimásolva.', 'good'); return; } } catch (e) {}
+      ta.select(); toast('Jelöld ki és másold ki kézzel.', 'bad');
+    };
+    const file = async () => { const r = await offerFile(`yoru-toge-mentes-${S.day}-nap.txt`, new Blob([ta.value], { type: 'text/plain' })); if (r === 'saved' || r === 'downloaded' || r === 'shared') toast('Mentésfájl elkészült.', 'good'); else if (r === 'failed') toast('Ebben a nézetben nem tudok fájlt menteni. Másold ki a kódot.', 'bad'); };
+    UI.open([UI.head('Mentés kimentése', this.summary(S)),
+      el('p', { style: 'margin:0' }, 'Másold ki a kódot, és a másik változatban a Beállítások → Mentés betöltése alatt illeszd be. Ha egyszerűbb, mentsd fájlba, és azt töltsd be.'),
+      el('label', { class: 'row', style: 'gap:8px;cursor:pointer' }, el('input', { type: 'checkbox', style: 'width:20px;height:20px;accent-color:var(--sodium)', onchange: (e) => { ghosts = e.target.checked; fill(); } }), 'Szellemautók is (hosszabb kód)'),
+      ta, info,
+      el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: copy }, 'Kód másolása'), el('button', { class: 'btn', onclick: file }, 'Fájlba mentem'), el('button', { class: 'btn ghost', onclick: () => UI.settings() }, 'Vissza'))]);
+    fill();
+  },
+  importUI() {
+    const ta = el('textarea', { class: 'xfer-code', rows: 5, placeholder: 'Illeszd be ide a mentéskódot (YT1:…)', 'aria-label': 'Mentéskód beillesztése', spellcheck: 'false' });
+    const err = el('p', { class: 'xfer-err', role: 'alert' });
+    const fileIn = el('input', { type: 'file', accept: '.txt,.json,text/plain,application/json', style: 'display:none', onchange: async (e) => { const f = e.target.files && e.target.files[0]; if (f) { ta.value = await f.text(); go(); } } });
+    const go = async () => {
+      err.textContent = '';
+      try { const o = await this.decode(ta.value); this.confirm(o); } catch (e) { err.textContent = e && e.message && !/JSON|atob|decod|base64/i.test(e.message) ? e.message : 'Nem sikerült beolvasni. Biztos, hogy az egész kódot bemásoltad?'; }
+    };
+    UI.open([UI.head('Mentés betöltése', 'Kód vagy mentésfájl a másik változatból'),
+      ta, err, fileIn,
+      el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: go }, 'Betöltöm'), el('button', { class: 'btn', onclick: () => fileIn.click() }, 'Fájlból'), el('button', { class: 'btn ghost', onclick: () => UI.settings() }, 'Vissza'))]);
+  },
+  confirm(o) {
+    UI.open([UI.head('Felülírod a mostani állást?', `Most: ${this.summary(S)}`),
+      el('p', { style: 'margin:0' }, `A betöltendő mentés: ${this.summary(o)}.`),
+      el('p', { class: 'muted', style: 'margin:0' }, 'A mostani garázsod ezzel elvész ebben a változatban.'),
+      el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: () => {
+        const keepGhosts = S.ghosts; S = sanitize(o);
+        if (!Object.keys(S.ghosts || {}).length && keepGhosts) S.ghosts = keepGhosts;
+        Save.queue(true); UI.close(); UI.show('garage'); toast(`Mentés betöltve: ${S.day}. nap.`, 'good');
+      } }, 'Igen, betöltöm'), el('button', { class: 'btn', onclick: () => this.importUI() }, 'Mégse'))]);
+  }
+};

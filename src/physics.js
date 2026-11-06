@@ -127,6 +127,7 @@ class PlayerCar {
     let dT = inp.steer * sp.steerLock / (1 + speed / 20);
     const beta = speed > 3 ? Math.atan2(vLat, Math.abs(vLong)) : 0;
     if (set.assist && speed > 4) dT += clamp((easy ? 0.95 : 0.65) * beta, -0.45, 0.45);
+    if (set.driftAid && speed > 4) dT += clamp(0.55 * beta, -0.4, 0.4); // holds a slide without touching the throttle
     dT += Math.sin(this.t * 13) * 0.012 * sp.wobble;
     this.delta += clamp(dT - this.delta, -2.8 * dt, 2.8 * dt);
     const delta = this.delta, sd = Math.sin(delta), cd = Math.cos(delta);
@@ -239,6 +240,8 @@ class PlayerCar {
     if (sp.lsd === '2way' || sp.lsd === '1.5way') if (thr < 0.1 && speed > 5) Tz -= this.w * sp.I * (sp.lsd === '2way' ? 1.4 : 0.7);
     // stability control: a corrective yaw moment once the car slides past a small angle
     if (set.esc && speed > 5 && Math.abs(beta) > 0.07) Tz += Math.sign(beta) * Math.min(1, (Math.abs(beta) - 0.07) * 5) * sp.I * 7;
+    // drift helper: lets the car slide, only catches it past about 35 degrees so it does not spin
+    if (set.driftAid && speed > 5 && Math.abs(beta) > 0.62) Tz += Math.sign(beta) * Math.min(1, (Math.abs(beta) - 0.62) * 3) * sp.I * 5;
     const fx = FL * sh + FLat * ch, fz = FL * ch - FLat * sh;
     this.vx += fx / m * dt; this.vz += fz / m * dt; this.w += Tz / sp.I * dt;
     if (speed < 2) this.w *= 1 - Math.min(1, dt * 4);

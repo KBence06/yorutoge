@@ -15,9 +15,10 @@ const SPONSORS = [
   { id: 'kuro', brand: 'Kurogane', task: 'Végezz el 3 szervizmunkát legalább 85%-os minőségben.', pay: 45000, test: () => (S.stats.svcGood || 0) >= 3, prog: () => `${S.stats.svcGood || 0} / 3` },
   { id: 'tsuyo', brand: 'Tsuyoshi Racing', task: 'Mérj legalább 200 kerék-LE-t a dynón.', pay: 80000, test: () => (S.stats.dynoBest || 0) >= 200, prog: () => S.stats.dynoBest ? `legjobb: ${Math.round(S.stats.dynoBest)} LE` : 'még nem mértél' },
   { id: 'yama', brand: 'Yamakaze', task: 'Győzz le 3 riválist.', pay: 60000, test: () => Object.keys(S.wins).length >= 3, prog: () => `${Object.keys(S.wins).length} / 3` },
+  { id: 'kansai', brand: 'Kansai Drift Club', task: 'Érj el legalább A értékelést drift edzésen vagy forgatáson.', pay: 50000, test: () => ['A', 'S', 'SS'].includes(S.stats.driftGrade), prog: () => S.stats.driftGrade ? `legjobb értékelés: ${S.stats.driftGrade}` : 'még nem driftedtél' },
   { id: 'nightpass', brand: 'NIGHT PASS', task: 'Címlapsztori: építs 300 LE fölötti autót.', pay: 100000, test: () => S.cars.some(cc => carSpec(cc).ps >= 300), prog: () => `legerősebb: ${Math.round(Math.max(...S.cars.map(cc => carSpec(cc).ps)))} LE` }
 ];
-const TOFU = { kurozawa: { pay: 12000, target: 88 }, mikazuki: { pay: 16000, target: 100 }, okami: { pay: 22000, target: 106 } };
+const TOFU = { kurozawa: { pay: 12000, target: 88 }, mikazuki: { pay: 16000, target: 100 }, okami: { pay: 22000, target: 106 }, kasumi: { pay: 28000, target: 132 } };
 
 function seeded(seed) { let r = seed * 9301 + 49297; return () => (r = (r * 9301 + 49297) % 233280) / 233280; }
 
@@ -44,6 +45,10 @@ const Jobs = {
     const ready = raceReadiness(car());
     g.append(card('tofu', '豆腐', 'Hajnali tofuszállítás', `A Fujimura tofubolt rendelése a hegyen át. Saját autóval, egy pohár vízzel a műszerfalon. Kiloccsan a víz: levonás. Szalagkorlát: összetört tofu.${ready ? ' ' + ready : ''}`, '¥ 12–30 ezer', J.done.tofu,
       el('div', { class: 'row' }, ...tg.map(t => el('button', { class: 'btn small primary', disabled: !!ready, onclick: () => { J.done.tofu = true; save(); Race.start(t, null, 'tofu'); } }, t.name.replace('-tōge', '').replace('-zaka', '')))), null));
+    const V = this.videoJob(J);
+    g.append(card('video', '撮影', 'Forgatás · Hashiriya Video', `A 走り屋ビデオ stábja ma éjjel a ${V.tg.name}n forgat (${dirName(V.tg)}). Kamerák a kanyarokban, a kazetta a videotékákba megy. Legalább ${fmtPts(V.target)} driftpont kell. Az utat lezárják, rendőr nem lesz.${CARS[car().model].layout === 'FF' ? ' Elsőkerekes autóval nagyon nehéz lesz.' : ''}${ready ? ' ' + ready : ''}`,
+      `¥ ${Math.round(V.pay * 0.8 / 1000)}–${Math.round(V.pay * 1.6 / 1000)} ezer`, J.done.video,
+      el('button', { class: 'btn primary small', disabled: !!ready, onclick: () => { J.done.video = true; save(); Race.start(V.tg, null, 'video', { target: V.target, pay: V.pay }); } }, 'Forgatás')));
     for (const sj of J.svc) {
       const job = SVC_JOBS[sj.job], p = PART[job.pid];
       const cv = el('canvas', { class: 'car-thumb', 'data-svc': sj.id });
@@ -72,6 +77,16 @@ const Jobs = {
       }
     });
   },
+  // one film crew a day, on a pass you have already unlocked; the bar rises with your reputation
+  videoJob(J) {
+    if (!J.video) {
+      const rnd = seeded(S.day * 13 + 5), open = TOUGES.filter(t => S.rep >= t.reqRep), t0 = open[Math.floor(rnd() * open.length)] || TOUGES[0];
+      const km = trackLength(t0) / 1000, r = Math.min(S.rep, 220);
+      J.video = { id: t0.id, rev: rnd() < 0.35, target: Math.round((900 + r * 10) * km / 100) * 100, pay: Math.round((10000 + km * 6000 + r * 70) / 1000) * 1000 };
+    }
+    const t0 = TOUGES.find(t => t.id === J.video.id) || TOUGES[0];
+    return { tg: tougeDir(t0, J.video.rev), target: J.video.target, pay: J.video.pay };
+  },
   service(sj) {
     const job = SVC_JOBS[sj.job], c = newCar(sj.model, sj.paint);
     Install.start(null, null, { c, p: PART[job.pid], title: job.title, who: sj.who, onDone: (q) => {
@@ -85,7 +100,7 @@ const Jobs = {
     } });
   },
   tofuPay(R, res) {
-    const cfg = TOFU[R.tg.id], cu = R.cup, lines = [];
+    const cfg = TOFU[R.tg.id] || TOFU.okami, cu = R.cup, lines = [];
     if (res !== 'win' || !cu) { lines.push('A tofu nem ért célba. Fujimura-san nem fizet, de holnap újra számít rád.'); return { pay: 0, lines }; }
     const water = cu.level / 0.86, broken = cu.tofu < 0.5;
     let pay = cfg.pay * (0.35 + 0.65 * Math.pow(water, 1.5));

@@ -27,11 +27,11 @@ function defaultState() {
     decor: { posterL: 'p_touge', posterR: null, neon: null, shelf: 's_oil', floorL: 'f_tires', floorR: null, floor: 'fl_concrete', light: 'l_cold' },
     ownedDecor: ['p_touge', 's_oil', 'f_tires', 'fl_concrete', 'l_cold'],
     wins: {}, best: {}, dyno: {},
-    settings: { auto: true, abs: true, assist: true, tcs: true, esc: true, aid: 'kezdo', brakeAid: true, steerAid: 'weak', autoGas: false, steer: 'drag', sens: 1, gfx: 'mid', vol: 0.7, cam: 'chase', notes: true, mirror: true },
+    settings: { auto: true, abs: true, assist: true, tcs: true, esc: true, aid: 'kezdo', brakeAid: true, steerAid: 'weak', autoGas: false, steer: 'drag', sens: 1, gfx: 'mid', vol: 0.7, cam: 'chase', notes: true, mirror: true, driftAid: true },
     ghosts: {},
     news: ['Megérkeztél Kurozawába. A garázs a tiéd, a Sprint 16 is. A hegyen Sota vár.'],
     jobs: { day: 0, done: {} }, stats: {}, sponsors: {},
-    wseed: 1 + Math.floor(Math.random() * 997), heat: 0, dirPref: {}
+    wseed: 1 + Math.floor(Math.random() * 997), heat: 0, dirPref: {}, driftBest: {}
   };
 }
 
@@ -143,4 +143,22 @@ function advanceDay() {
   for (const o of arrived) S.inv.push(o.pid);
   if (arrived.length) addNews(arrived.length === 1 ? `Csomag érkezett: ${PART[arrived[0].pid].name}.` : `${arrived.length} csomag érkezett. Irány a szerelés.`);
   return arrived;
+}
+
+// hand a generated file to the player: inside Claude through the downloads capability, on a phone through the share sheet, else a plain download
+async function offerFile(name, blob) {
+  try {
+    if (window.claude && window.claude.use) {
+      const dl = await window.claude.use('downloads');
+      if (dl) { await dl.save({ filename: name, data: blob }); return 'saved'; }
+    }
+  } catch (e) { if (e && e.code === 'declined') return 'declined'; if (e && e.code === 'rate_limited') return 'declined'; }
+  try {
+    const f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.share && matchMedia('(pointer:coarse)').matches && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Yoru Tōge' }); return 'shared'; }
+  } catch (e) { if (e && e.name === 'AbortError') return 'declined'; }
+  try {
+    const u = URL.createObjectURL(blob), a = el('a', { href: u, download: name, style: 'display:none' });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 5000); return 'downloaded';
+  } catch (e) { return 'failed'; }
 }

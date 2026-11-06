@@ -1,10 +1,11 @@
 // ===================== RACE (three.js scene, loop, HUD, controls) =====================
 const Race = {
   active: false,
-  start(tg, rv, mode) {
+  start(tg, rv, mode, opts) {
     const c = car();
     const ready = raceReadiness(c); if (ready) { toast(ready, 'bad'); return; }
     this.tg = tg; this.rv = rv; this.c = c; this.mode = mode || (rv ? 'battle' : 'practice'); this.dawn = this.mode === 'tofu';
+    this.drift = this.mode === 'drift' || this.mode === 'video'; this.video = this.mode === 'video' ? (opts || { target: 3000, pay: 20000 }) : null; this.photo = null;
     const root = $('#race'); root.hidden = false; root.className = S.settings.gfx === 'low' ? 'lowres' : '';
     root.replaceChildren(el('div', { class: 'intro' }, el('div', { class: 'card' }, el('div', { class: 'jp' }, tg.jp), el('div', { class: 'vs' }, 'A hegy betöltése…'))));
     this.active = true;
@@ -19,13 +20,13 @@ const Race = {
     const tg = this.tg, rv = this.rv, root = $('#race');
     const card = el('div', { class: 'card' },
       el('div', { class: 'jp' }, tg.jp),
-      el('div', { class: 'vs' }, this.dawn ? [el('span', null, 'Tofuszállítás '), el('em', null, '豆腐')] : rv ? [el('span', null, 'Te '), el('em', null, 'vs'), el('span', null, ` ${rv.name}`)] : 'Időmérő edzés'),
+      el('div', { class: 'vs' }, this.dawn ? [el('span', null, 'Tofuszállítás '), el('em', null, '豆腐')] : this.video ? [el('span', null, 'Forgatás '), el('em', null, '撮影')] : this.drift ? [el('span', null, 'Drift edzés '), el('em', null, 'ドリフト')] : rv ? [el('span', null, 'Te '), el('em', null, 'vs'), el('span', null, ` ${rv.name}`)] : 'Időmérő edzés'),
       el('div', { class: 'eyebrow' }, `${tg.name} · ${dirName(tg)} · ${((this.T.finish - this.T.start) / 1000).toFixed(2)} km`),
       el('div', { class: 'row', style: 'justify-content:center;gap:8px' }, weatherBadge(this.wk), !this.dawn && policeChance() > 0.05 ? el('span', { class: 'tag ' + (policeChance() > 0.3 ? 'bad' : 'warn') }, `Rendőr: ${heatLabel(S.heat || 0)}`) : null),
       this.wk !== 'clear' ? el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, `${WEATHER[this.wk].desc} Tapadás a gumijaiddal: ${Math.round(wetGrip(this.c, this.wk) * 100)}%.`) : null,
       this.dawn ? el('div', { class: 'line' }, `Hajnali fél öt. A Fujimura tofubolt rendelése a hegy ${tg.dir === 'down' ? 'aljára' : 'tetejére'} megy. Egy pohár víz áll a műszerfalon: ha kiloccsan, kevesebbet fizetnek. Ha a szalagkorlátnak mész, összetörik a tofu.`)
-      : rv ? el('div', { class: 'line' }, `„${rv.line}” · ${CARS[rv.car].name}${rv.meet ? ` · tét ${fmtY(rv.prize)}` : ''}`) : el('div', { class: 'line' }, S.best[tg.id] ? `Legjobb időd: ${fmtTime(S.best[tg.id])}` : 'Egyedül a hegyen. Tanuld meg a kanyarokat.'),
-      el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, 'Bal hüvelykujj: húzd balra-jobbra a kormányzáshoz. Jobb oldalt gáz, fék, kézifék. Billentyűzeten nyilak, szóköz a kézifék, Q/E váltás.'),
+      : rv ? el('div', { class: 'line' }, `„${rv.line}” · ${CARS[rv.car].name}${rv.meet ? ` · tét ${fmtY(rv.prize)}` : ''}`) : this.drift ? this.driftIntro() : el('div', { class: 'line' }, S.best[trackKey(tg)] ? `Legjobb időd: ${fmtTime(S.best[trackKey(tg)])}` : 'Egyedül a hegyen. Tanuld meg a kanyarokat.'),
+      this.drift ? null : el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, 'Bal hüvelykujj: húzd balra-jobbra a kormányzáshoz. Jobb oldalt gáz, fék, kézifék. Billentyűzeten nyilak, szóköz a kézifék, Q/E váltás.'),
       el('div', { class: 'row', style: 'justify-content:center' },
         el('button', { class: 'btn primary', style: 'min-width:160px;font-size:17px', onclick: () => this.go() }, 'Indulás'),
         el('button', { class: 'btn ghost', onclick: () => this.teardown() }, 'Mégse')));
@@ -33,11 +34,27 @@ const Race = {
     root.append(this.introEl);
     this.renderOnce();
   },
+  driftIntro() {
+    const tk = trackKey(this.tg), best = (S.driftBest || {})[tk], ff = CARS[this.c.model].layout === 'FF', V = this.video;
+    const box = el('div', { style: 'display:flex;flex-direction:column;gap:8px;align-items:center' });
+    const draw = () => {
+      const on = this.set.driftAid, setAid = (v) => { S.settings.driftAid = this.set.driftAid = v; save(); draw(); };
+      box.replaceChildren(
+        el('div', { class: 'line' }, V ? `A 走り屋ビデオ stábja a kanyarokban áll. Legalább ${fmtPts(V.target)} pont kell, hogy a felvétel kazettára kerüljön. Lezárták az utat, rendőr nem lesz.`
+          : `Pontot a csúszás szöge és a sebesség ad. Ha a kanyarokat egymás után csúszod végig, nő a szorzó. A szalagkorlát vagy egy pörgés elviszi az éppen futó sorozatot.${best ? ` Legjobb: ${fmtPts(best)} pont.` : ''}`),
+        el('div', { class: 'row', style: 'justify-content:center;gap:6px', role: 'group', 'aria-label': 'Driftsegéd' }, el('span', { class: 'muted' }, 'Driftsegéd'),
+          el('button', { class: 'chip', 'aria-pressed': String(on), onclick: () => setAid(true) }, 'Be'), el('button', { class: 'chip', 'aria-pressed': String(!on), onclick: () => setAid(false) }, 'Ki')),
+        el('div', { class: 'muted', style: 'font-size:12.5px;max-width:52ch' }, (on ? 'Ellenkormányoz, és megfogja az autót, ha túl nagy a szög. A gáz a tiéd. ' : 'Minden segítség kikapcsolva, a menetstabilizáló is. ')
+          + (ff ? 'Elsőkerekes autó: gázelvétellel és kézifékkel csúszik, ezért a pontjai 25%-kal többet érnek.' : 'Kanyar előtt egy rántás a kéziféken vagy gázelvétel, utána gázzal tartsd a csúszást.')));
+    };
+    draw(); return box;
+  },
   go() {
     Audio2.init();
     try { const d = document.documentElement; if (d.requestFullscreen && matchMedia('(pointer:coarse)').matches) d.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {}); } catch (e) {}
     this.introEl.remove();
     $('#race').classList.add('running');
+    this.dr = this.drift ? { total: 0, chain: 0, mult: 1, cset: new Set(), dir: 0, dirT: 0, idle: 0, hits: 0, ang: 0, longest: 0, maxAng: 0, lost: 0, popT: 0, pop: '', ff: CARS[this.c.model].layout === 'FF' ? 1.25 : 1 } : null;
     this.buildHud();
     Audio2.startEngine(this.P.sp); Audio2.rain(this.W.rain ? 1 : this.wk === 'damp' ? 0.15 : 0);
     this.phase = 'count'; this.count = 3.6; this.lastBeep = 4; this.time = 0;
@@ -48,7 +65,7 @@ const Race = {
 
   // ---------------------------------------------------------------- scene
   build() {
-    const tg = this.tg, rv = this.rv, set = S.settings;
+    const tg = this.tg, rv = this.rv, set = this.set = this.drift ? driftSet() : S.settings;
     const T = this.T = buildTrack(tg);
     const wk = this.wk = this.forceWeather || weatherNow(), W = this.W = WEATHER[wk];
     const sp = carSpec(this.c), wg = wetGrip(this.c, wk); sp.muF *= wg; sp.muR *= wg;
@@ -81,10 +98,10 @@ const Race = {
     // ghost of the best practice run
     this.rec = []; this.recT = 0; this.ghost = null; this.gMesh = null;
     const gk = trackKey(tg);
-    if (!rv && S.ghosts && S.ghosts[gk] && CARS[S.ghosts[gk].model]) { this.ghost = S.ghosts[gk]; this.gMesh = this.buildCar(this.ghost.model, '#9fd4ff', {}, false, { ghost: true }); }
+    if (this.mode === 'practice' && S.ghosts && S.ghosts[gk] && CARS[S.ghosts[gk].model]) { this.ghost = S.ghosts[gk]; this.gMesh = this.buildCar(this.ghost.model, '#9fd4ff', {}, false, { ghost: true }); }
     // a patrol car may be waiting in a lay-by
     this.police = null; this.pol = null;
-    if (this.mode !== 'tofu' && (this.forcePolice || Math.random() < policeChance())) {
+    if (this.mode !== 'tofu' && this.mode !== 'video' && (this.forcePolice || Math.random() < policeChance())) {
       const L = T.finish - T.start; let ps = T.start + L * (0.25 + Math.random() * 0.3);
       for (let tries = 0; tries < 60; tries++) {
         let ok = true; for (let j = -20; j <= 30; j += 2) if (Math.abs(T.k[clamp(Math.floor(ps + j), 0, T.N - 1)]) > 1 / 150) { ok = false; break; }
@@ -475,10 +492,11 @@ const Race = {
     this.inp = { steer: 0, gas: 0, brake: 0, hand: false, kSteer: 0, bSteer: 0, bDir: { l: false, r: false }, keys: {} };
     const st = S.settings, sens = st.sens || 1;
     const hud = el('div', { class: 'hud' },
-      el('div', { class: 'hud-tl' }, el('div', { class: 'pos', id: 'hPos' }, this.dawn ? 'TOFU' : rv ? '' : 'EDZÉS'), el('div', { class: 'gap', id: 'hGap' }), el('div', { class: 'prog' }, el('i', { class: 'me', id: 'hProgMe' }), rv ? el('i', { class: 'rv', id: 'hProgRv' }) : null),
+      el('div', { class: 'hud-tl' }, el('div', { class: 'pos', id: 'hPos' }, this.dawn ? 'TOFU' : this.video ? 'FORGATÁS' : this.drift ? 'DRIFT' : rv ? '' : 'EDZÉS'), el('div', { class: 'gap', id: 'hGap' }), el('div', { class: 'prog' }, el('i', { class: 'me', id: 'hProgMe' }), rv ? el('i', { class: 'rv', id: 'hProgRv' }) : null),
         this.police ? el('div', { class: 'cop', id: 'hCop', hidden: true }, el('b', null, '警察'), el('span', { id: 'hCopTxt' }, 'RENDŐR'), el('i', null, el('u', { id: 'hCopBar' }))) : null,
         this.wk !== 'clear' ? el('div', { class: 'hud-wx' }, weatherBadge(this.wk, true)) : null),
       this.police ? el('div', { class: 'cop-say', id: 'hCopSay', hidden: true }, el('b', null, '前の車、止まりなさい！'), el('small', null, '„Az előttem haladó autó, álljon meg!”')) : null,
+      this.drift ? el('div', { class: 'drift', id: 'hDrift' }, el('div', { class: 'dr-chain' }, el('b', { id: 'hDrChain' }), el('span', { id: 'hDrMult' })), el('div', { class: 'dr-ang', 'aria-hidden': 'true' }, el('i', { id: 'hDrAng' })), el('div', { class: 'dr-pop', id: 'hDrPop' })) : null,
       el('div', { class: 'hud-tr' }, el('div', { class: 'timer', id: 'hTime' }, '0:00.00'), el('div', { class: 'warnings', id: 'hWarn' })),
       el('div', { class: 'note', id: 'hNote', hidden: true }, el('span', { class: 'ico', id: 'hNoteIco' }), el('div', null, el('b', { id: 'hNoteTxt' }), el('small', { id: 'hNoteSub' }))),
       el('div', { class: 'dash' }, el('canvas', { id: 'hTach', width: 460, height: 272 }),
@@ -522,12 +540,17 @@ const Race = {
       steer.addEventListener('pointerup', sEnd); steer.addEventListener('pointercancel', sEnd);
       ctl.append(steer, sui, pedals);
     }
-    const top = el('div', { class: 'race-top' }, el('button', { class: 'btn small', onclick: () => this.pause() }, 'Szünet'));
+    const top = el('div', { class: 'race-top' }, el('button', { class: 'btn small', onclick: () => this.pause() }, 'Szünet'), el('button', { class: 'btn small', 'aria-label': 'Fotó mód', onclick: () => this.photoOpen() }, 'Fotó'));
     this.countEl = el('div', { class: 'countdown' }, '');
     const rot = el('div', { class: 'rotate-hint show' }, el('div', null, 'Fordítsd fekvőbe a telefont.', el('br'), el('button', { class: 'btn small', style: 'margin-top:14px', onclick: (e) => e.target.closest('.rotate-hint').classList.remove('show') }, 'Így is jó')));
     if (this.dawn) { this.cup = new WaterCup(); hud.append(el('div', { class: 'cup' }, el('canvas', { id: 'hCup', width: 180, height: 220 }), el('div', { class: 'cup-l', id: 'hCupL' }, 'VÍZ 100%'))); }
+    if (this.video) {
+      const d = tapeDate(S.day), mon = ['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUN.', 'JUL.', 'AUG.', 'SEP.', 'OCT.', 'NOV.', 'DEC.'][d.getMonth()];
+      root.append(el('div', { class: 'vhs', 'aria-hidden': 'true' }, el('div', { class: 'vhs-rec' }, el('i'), 'REC'), el('div', { class: 'vhs-tc', id: 'hVhsTc' }, 'SP 0:00:00'), el('div', { class: 'vhs-date' }, `${mon} ${String(d.getDate()).padStart(2, ' ')} 1998`, el('br'), 'AM 2:47')));
+    }
+    if (this.drift) root.classList.add('drifting');
     root.append(hud, ctl, top, this.countEl, rot);
-    this.h = { cop: $('#hCop'), copTxt: $('#hCopTxt'), copBar: $('#hCopBar'), copSay: $('#hCopSay'), note: $('#hNote'), noteIco: $('#hNoteIco'), noteTxt: $('#hNoteTxt'), noteSub: $('#hNoteSub'), pos: $('#hPos'), gap: $('#hGap'), time: $('#hTime'), warn: $('#hWarn'), gear: $('#hGear'), spd: $('#hSpd'), me: $('#hProgMe'), rv: $('#hProgRv'), boost: $('#hBoost'), tach: $('#hTach').getContext('2d') };
+    this.h = { cop: $('#hCop'), copTxt: $('#hCopTxt'), copBar: $('#hCopBar'), copSay: $('#hCopSay'), note: $('#hNote'), noteIco: $('#hNoteIco'), noteTxt: $('#hNoteTxt'), noteSub: $('#hNoteSub'), pos: $('#hPos'), gap: $('#hGap'), time: $('#hTime'), warn: $('#hWarn'), gear: $('#hGear'), spd: $('#hSpd'), me: $('#hProgMe'), rv: $('#hProgRv'), boost: $('#hBoost'), tach: $('#hTach').getContext('2d'), drChain: $('#hDrChain'), drMult: $('#hDrMult'), drAng: $('#hDrAng'), drPop: $('#hDrPop'), drift: $('#hDrift'), vhsTc: $('#hVhsTc') };
     this.hudT = 0;
     this.onKey = (e) => {
       const down = e.type === 'keydown', k = e.key;
@@ -535,7 +558,8 @@ const Race = {
       this.inp.keys[k.toLowerCase()] = down;
       if (down && (k === 'q' || k === 'Q')) this.P.shift(-1);
       if (down && (k === 'e' || k === 'E')) this.P.shift(1);
-      if (down && k === 'Escape') this.pause();
+      if (down && k === 'Escape') { if (this.photo) this.photoClose(); else this.pause(); }
+      if (down && (k === 'p' || k === 'P') && !this.photo) this.photoOpen();
     };
     window.addEventListener('keydown', this.onKey); window.addEventListener('keyup', this.onKey);
   },
@@ -557,9 +581,10 @@ const Race = {
   pause() {
     if (this.phase === 'done' || this.paused) return;
     this.paused = true; Audio2.setEngine(this.P.rpm, 0, 0, 0, 0);
-    const box = el('div', { class: 'intro' }, el('div', { class: 'card' }, el('div', { class: 'vs' }, 'Szünet'),
+    const box = el('div', { class: 'intro pausebox' }, el('div', { class: 'card' }, el('div', { class: 'vs' }, 'Szünet'),
       el('div', { class: 'row', style: 'justify-content:center' },
         el('button', { class: 'btn primary', onclick: () => { box.remove(); this.paused = false; this.last = performance.now(); } }, 'Folytatás'),
+        el('button', { class: 'btn', onclick: () => { box.remove(); this.photoOpen(); } }, 'Fotó mód'),
         el('button', { class: 'btn danger', onclick: () => { box.remove(); this.paused = false; this.finish(this.rv ? 'forfeit' : 'quit'); } }, this.rv ? 'Feladom' : 'Kilépek'))));
     $('#race').append(box);
   },
@@ -567,7 +592,7 @@ const Race = {
   // ---------------------------------------------------------------- loop
   frame(now) {
     let dt = Math.min(0.05, (now - this.last) / 1000); this.last = now; const wall = this.lastWall; this.lastWall = now;
-    if (this.paused) { this.renderer.render(this.scene, this.cam); return; }
+    if (this.paused) { if (this.photo) this.photoRender(); else this.renderer.render(this.scene, this.cam); return; }
     const P = this.P, R = this.R, T = this.T, H = 1 / 120;
     if (this.phase === 'count') {
       this.count -= Math.min(0.25, (now - (wall || now)) / 1000);
@@ -581,7 +606,7 @@ const Race = {
       this.acc -= H;
       if (this.phase === 'count') { P.step(H, { steer: inp.steer * 0.2, gas: inp.gas, brake: 1, hand: false }); P.vx = P.vz = 0; P.w = 0; continue; }
       if (this.phase === 'done') { P.step(H, { steer: 0, gas: 0, brake: 0.6, hand: false }); if (R) R.step(H, P, 0.7); continue; }
-      P.step(H, applyAids(P, T, this.aid, inp, S.settings));
+      P.step(H, applyAids(P, T, this.aid, inp, this.set));
       if (R) {
         const gap = R.s - P.s, band = gap > 80 ? 0.97 : gap < -60 ? 1.03 : 1;
         R.step(H, P, band);
@@ -592,6 +617,7 @@ const Race = {
     }
     let impact = 0;
     while (P.hits.length) { const hv = P.hits.pop(); impact = Math.max(impact, hv); Audio2.impact(hv); }
+    if (this.dr && this.phase === 'race') this.driftStep(dt);
     if (this.cup && this.phase === 'race') { this.cup.step(dt, P.ay, P.ax, impact); if (this.cup.lastSpill > 0.0004 && !this.splashT) { this.splashT = 0.5; } }
     if (this.splashT) this.splashT = Math.max(0, this.splashT - dt);
     if (this.phase === 'race') while (this.time >= this.recT) { this.rec.push(+P.x.toFixed(2), +P.y.toFixed(2), +P.z.toFixed(2), +P.h.toFixed(3), +P.s.toFixed(1)); this.recT += 0.1; }
@@ -635,6 +661,17 @@ const Race = {
       h.pos.textContent = gap >= 0 ? 'VEZETSZ' : 'ÜLDÖZÖL'; h.pos.className = 'pos ' + (gap >= 0 ? 'lead' : 'chase');
       const sec = Math.abs(gap) / Math.max(5, gap >= 0 ? R.v : P.speed), gm = Math.round(gap);
       h.gap.textContent = `${gm > 0 ? '+' : gm < 0 ? '−' : ''}${Math.abs(gm)} m · ${sec.toFixed(1)} s`;
+    }
+    if (this.dr) {
+      const D = this.dr, V = this.video;
+      h.gap.textContent = V ? `${fmtPts(D.total)} / ${fmtPts(V.target)} pont` : `${fmtPts(D.total)} pont`;
+      const on = D.chain > 0;
+      h.drChain.textContent = on ? fmtPts(D.chain) : ''; h.drMult.textContent = on && D.mult > 1 ? '×' + D.mult.toFixed(1) : '';
+      h.drift.classList.toggle('on', on);
+      h.drAng.style.width = Math.round(clamp(D.ang / 60, 0, 1) * 100) + '%'; h.drAng.classList.toggle('hi', D.ang > 30 && D.ang < 105);
+      const pop = D.popT > 0 ? D.pop : '';
+      if (h.drPop.textContent !== pop) { h.drPop.textContent = pop; h.drPop.className = 'dr-pop' + (D.popBad ? ' bad' : ''); }
+      if (h.vhsTc) { const t = Math.floor(this.time); h.vhsTc.textContent = `SP 0:${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; }
     }
     if (!R && this.gMesh && this.ghostS != null && this.phase !== 'count') { const gm = Math.round(P.s - this.ghostS); h.gap.textContent = `${gm > 0 ? '+' : gm < 0 ? '−' : ''}${Math.abs(gm)} m a szellemhez`; }
     this.updateNote();
@@ -704,6 +741,7 @@ const Race = {
   },
   finish(result) {
     if (this.phase === 'done') return;
+    if (this.dr && result === 'win' && this.dr.chain > 0) this.driftBank();
     this.phase = 'done'; this.result = result;
     if (this.dawn && result === 'win') { this.countEl.textContent = 'LESZÁLLÍTVA'; setTimeout(() => this.results(), 1800); this.phase = 'done'; this.result = result; return; }
     const msg = { win: 'GYŐZELEM', lose: 'VERESÉG', gone: 'ELHÚZOTT', blown: 'MOTORHIBA', wreck: 'TÖRÉS', forfeit: 'FELADTAD', quit: 'KILÉPTÉL', busted: 'LEKAPCSOLTAK' }[result];
@@ -727,7 +765,9 @@ const Race = {
     if (tofuInfo) { money += tofuInfo.pay; lines.push(...tofuInfo.lines); }
     const W = this.W, tk = trackKey(tg), Q = this.police;
     if (W.bonus > 1 && tofuInfo && tofuInfo.pay > 0) { const extra = Math.round(tofuInfo.pay * (W.bonus - 1) / 100) * 100; money += extra; lines.push(`${W.short} miatt pótlék: +${fmtY(extra)}.`); }
-    if (!rv && !this.dawn && res === 'win') {
+    let driftInfo = null;
+    if (this.drift) driftInfo = this.driftResults(res, lines, W, tk, (m, r) => { money += m; rep += r; });
+    if (this.mode === 'practice' && res === 'win') {
       const t = this.time; const best = S.best[tk];
       if (!best || t < best) { S.best[tk] = t; S.ghosts = S.ghosts || {}; S.ghosts[tk] = { model: c.model, t, pts: this.rec }; lines.push(`Új legjobb idő (${dirName(tg)}${this.wk !== 'clear' ? ', ' + W.short.toLowerCase() : ''}): ${fmtTime(t)}. A következő edzésen ez lesz a szellemautó.`); } else lines.push(`Idő: ${fmtTime(t)} · legjobb ${fmtTime(best)}`);
     }
@@ -763,14 +803,14 @@ const Race = {
     S.money += money; const rep0 = S.rep; S.rep = Math.max(0, S.rep + rep); rep = S.rep - rep0;
     const arrived = advanceDay();
     const d = (k) => { const v = Math.round((before[k] - c.cond[k]) * 100); return v > 0 ? '−' + v : '0'; };
-    if (!rv && !this.dawn && res === 'win' && P.hitCount === 0) S.stats.clean = (S.stats.clean || 0) + 1;
-    const title = this.dawn ? (res === 'win' ? 'Leszállítva' : 'A szállítás elmaradt') : { win: rv ? 'Győzelem' : 'Célba értél', lose: 'Vereség', gone: 'Elhúzott', blown: 'A motor feladta', wreck: 'Totálkár', forfeit: 'Feladtad', quit: 'Kiszálltál', busted: 'Lekapcsoltak' }[res];
+    if ((this.mode === 'practice' || this.mode === 'drift') && res === 'win' && P.hitCount === 0) S.stats.clean = (S.stats.clean || 0) + 1;
+    const title = this.video ? (res === 'win' && driftInfo && driftInfo.pay > 0 ? 'Felvétel kész' : 'Nem lett felvétel') : this.drift && res === 'win' ? 'Drift edzés' : this.dawn ? (res === 'win' ? 'Leszállítva' : 'A szállítás elmaradt') : { win: rv ? 'Győzelem' : 'Célba értél', lose: 'Vereség', gone: 'Elhúzott', blown: 'A motor feladta', wreck: 'Totálkár', forfeit: 'Feladtad', quit: 'Kiszálltál', busted: 'Lekapcsoltak' }[res];
     const why = { gone: 'A hátsó lámpái eltűntek a ködben. Nem értél utol.', blown: 'Kopogott, amíg el nem fáradt. A dynón látszott volna.', wreck: 'A szalagkorlát nyert.', busted: 'A villogó beért, és nem tudtad lerázni.' }[res];
     save();
     this.teardown();
-    UI.show(this.dawn ? 'work' : 'touge');
+    UI.show(this.dawn || this.video ? 'work' : 'touge');
     UI.open([UI.head(title, `${tg.name} · ${dirName(tg)}${rv ? ' · ' + rv.name : ''}`),
-      el('div', { class: 'res-big ' + (res === 'win' ? 'win' : 'lose') }, this.dawn ? (tofuInfo && tofuInfo.pay > 0 ? fmtY(tofuInfo.pay) : '—') : res === 'busted' ? '捕' : rv ? (res === 'win' ? '勝' : '負') : fmtTime(this.time)),
+      el('div', { class: 'res-big ' + (res === 'win' ? 'win' : 'lose') }, driftInfo && res === 'win' ? driftInfo.gr : this.dawn ? (tofuInfo && tofuInfo.pay > 0 ? fmtY(tofuInfo.pay) : '—') : res === 'busted' ? '捕' : rv ? (res === 'win' ? '勝' : '負') : fmtTime(this.time)),
       why ? el('p', { style: 'margin:0' }, why) : null,
       ...lines.map(l => el('p', { style: 'margin:0' }, l)),
       el('div', { class: 'specs' },
@@ -778,6 +818,122 @@ const Race = {
         specTile('Karosszéria', d('body'), '%'), specTile('Motor', d('engine'), '%'), specTile('Gumik', d('tires'), '%')),
       arrived.length ? el('p', { class: 'muted', style: 'margin:0' }, `Reggelre megjött: ${arrived.map(o => PART[o.pid].name).join(', ')}.`) : null,
       el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: () => UI.close() }, 'Vissza'))]);
+  },
+  // ---------------------------------------------------------------- drift scoring
+  driftStep(dt) {
+    const P = this.P, D = this.dr;
+    const beta = P.speed > 3 ? Math.atan2(P.vLat, Math.abs(P.vLong)) : 0, ang = Math.abs(beta) * 57.2958;
+    const hit = P.hitCount > D.hits; D.hits = P.hitCount;
+    D.ang = ang; if (D.popT > 0) D.popT -= dt;
+    if (D.chain > 0 && (hit || ang > 105 || P.vLong < -0.5)) { // the rail or a spin takes the running chain
+      D.pop = 'ELVESZETT · ' + fmtPts(D.chain * D.mult); D.popBad = true; D.popT = 1.6; D.lost++;
+      D.chain = 0; D.mult = 1; D.cset.clear(); D.dir = 0; D.idle = 0; return;
+    }
+    if (P.speed > 8 && ang > 10 && ang < 105 && P.vLong > 0) {
+      D.chain += (Math.min(ang, 60) - 8) * P.speed * 3.6 * 0.12 * dt * D.ff;
+      D.idle = 0; D.maxAng = Math.max(D.maxAng, Math.min(ang, 90));
+      const dir = Math.sign(beta);
+      if (D.dir && dir !== D.dir && D.dirT > 0.4) { D.mult = Math.min(4, D.mult + 0.5); D.pop = 'ÁTVÁLTÁS ×' + D.mult.toFixed(1); D.popBad = false; D.popT = 1; }
+      if (dir !== D.dir) { D.dir = dir; D.dirT = 0; } else D.dirT += dt;
+      const ci = this.corners.findIndex(c => P.s >= c.s0 - 12 && P.s <= c.s1 + 6);
+      if (ci >= 0 && !D.cset.has(ci)) { D.cset.add(ci); if (D.cset.size > 1) { D.mult = Math.min(4, D.mult + 0.5); D.pop = 'ÖSSZEFŰZVE ×' + D.mult.toFixed(1); D.popBad = false; D.popT = 1; } }
+    } else if (D.chain > 0 && (D.idle += dt) > 1.6) this.driftBank();
+  },
+  driftBank() {
+    const D = this.dr, v = Math.round(D.chain * D.mult);
+    D.total += v; D.longest = Math.max(D.longest, v);
+    if (v >= 50) { D.pop = '+' + fmtPts(v); D.popBad = false; D.popT = 1.4; }
+    D.chain = 0; D.mult = 1; D.cset.clear(); D.dir = 0; D.idle = 0;
+  },
+  driftResults(res, lines, W, tk, add) {
+    const D = this.dr || { total: 0, longest: 0, maxAng: 0, lost: 0 }, tg = this.tg, tot = Math.round(D.total);
+    const km = Math.max(0.5, (this.T.finish - this.T.start) / 1000), gr = driftGrade(tot / km), info = { tot, gr, pay: 0 };
+    if (res !== 'win') { lines.push(this.video ? 'Nem értél le a hegyről, nincs felvétel. A stáb összepakolt.' : 'Nem értél célba, a pontok elvesztek.'); return info; }
+    lines.push(`${fmtPts(tot)} driftpont · ${fmtPts(tot / km)} pont/km · értékelés: ${gr}.`);
+    if (D.longest > 0) lines.push(`Leghosszabb sorozat: ${fmtPts(D.longest)} pont · legnagyobb szög: ${Math.round(D.maxAng)}°${D.lost ? ` · ${D.lost} elveszett sorozat` : ''}.`);
+    const order = DRIFT_GRADES.map(g => g[0]);
+    if (!S.stats.driftGrade || order.indexOf(gr) < order.indexOf(S.stats.driftGrade)) S.stats.driftGrade = gr;
+    if (this.video) {
+      const V = this.video, r = tot / V.target;
+      let pay = r >= 1 ? V.pay * Math.min(1.6, 0.8 + 0.4 * r) : r >= 0.6 ? V.pay * 0.25 : 0;
+      pay = Math.round(pay * W.bonus / 100) * 100; info.pay = pay;
+      add(pay, r >= 1.5 ? 2 : r >= 1 ? 1 : 0);
+      if (r >= 1) { lines.push(`A stáb elégedett (kellett ${fmtPts(V.target)} pont).${W.bonus > 1 ? ` ${W.short} miatt pótlék jár.` : ''} A kazetta jövő héten a videotékákban.`); addNews(`A Hashiriya Video felvette a driftedet a ${tg.name}n. Jövő héten kazettán.`); S.stats.videos = (S.stats.videos || 0) + 1; }
+      else lines.push(r >= 0.6 ? `Kellett volna ${fmtPts(V.target)} pont. Pár jelenet használható, azokért fizetnek.` : `Kellett volna ${fmtPts(V.target)} pont. Nem lett használható felvétel.`);
+    } else {
+      S.driftBest = S.driftBest || {}; const b = S.driftBest[tk] || 0;
+      if (tot > b) { S.driftBest[tk] = tot; lines.push(b ? `Új legjobb drift ezen a hágón (${dirName(tg)}). Az előző ${fmtPts(b)} volt.` : `Első pontszámod ezen a hágón (${dirName(tg)}).`); if (b && ['A', 'S', 'SS'].includes(gr)) add(0, 1); }
+      else lines.push(`Legjobb ezen a hágón: ${fmtPts(b)} pont.`);
+    }
+    return info;
+  },
+
+  // ---------------------------------------------------------------- photo mode
+  photoOpen() {
+    if (this.photo || !this.renderer || this.phase === 'done' || !this.h || (this.introEl && this.introEl.isConnected)) return;
+    const root = $('#race'), pb = root.querySelector('.pausebox'); if (pb) pb.remove();
+    this.paused = true; Audio2.setEngine(this.P.rpm, 0, 0, 0, 0);
+    root.classList.add('photo');
+    const P = this.P, ph = this.photo = { yaw: P.h + 2.4, pitch: 0.14, dist: 6.5, fov: 48, f: 'film', lift: 0.75, dirty: true, ptr: new Map(), pinch: null };
+    const cv = ph.cv = el('canvas', { class: 'photo-cv', role: 'img', 'aria-label': 'Fotó előnézete' });
+    const chips = (list, key, label) => el('div', { class: 'chips', role: 'group', 'aria-label': label }, ...list.map(([v, n]) => el('button', { class: 'chip', 'aria-pressed': String(ph[key] === v),
+      onclick: (e) => { ph[key] = v; ph.dirty = true; for (const b of e.currentTarget.parentNode.children) b.setAttribute('aria-pressed', String(b === e.currentTarget)); } }, n)));
+    ph.ui = el('div', { class: 'photo-ui' },
+      el('div', { class: 'photo-top' }, el('div', { class: 'photo-t' }, el('b', null, '写真'), 'Fotó mód'), el('div', { class: 'photo-hint' }, 'Húzd a képet a forgatáshoz, két ujjal közelíts.'), el('button', { class: 'btn small', onclick: () => this.photoClose() }, 'Vissza')),
+      el('div', { class: 'photo-bot' },
+        chips([['natur', 'Natúr'], ['film', 'Eldobható gép'], ['vhs', 'VHS'], ['bw', 'Fekete-fehér'], ['mag', 'Magazincímlap']], 'f', 'Szűrő'),
+        el('div', { class: 'photo-row' }, chips([[62, '24 mm'], [48, '35 mm'], [34, '50 mm'], [21, '85 mm']], 'fov', 'Objektív'),
+          el('button', { class: 'btn primary photo-shot', onclick: () => this.photoSave() }, 'Kattintás'))));
+    cv.addEventListener('pointerdown', (e) => { try { cv.setPointerCapture(e.pointerId); } catch (er) {} ph.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY }); ph.pinch = null; });
+    cv.addEventListener('pointermove', (e) => {
+      const p = ph.ptr.get(e.pointerId); if (!p) return;
+      if (ph.ptr.size === 1) { ph.yaw -= (e.clientX - p.x) * 0.008; ph.pitch = clamp(ph.pitch + (e.clientY - p.y) * 0.005, 0.02, 1.25); }
+      p.x = e.clientX; p.y = e.clientY;
+      if (ph.ptr.size === 2) { const [a, b] = [...ph.ptr.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (ph.pinch && d > 10) ph.dist = clamp(ph.dist * ph.pinch / d, 2.6, 20); ph.pinch = d; }
+      ph.dirty = true;
+    });
+    const up = (e) => { ph.ptr.delete(e.pointerId); ph.pinch = null; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('wheel', (e) => { e.preventDefault(); ph.dist = clamp(ph.dist * Math.exp(e.deltaY * 0.0012), 2.6, 20); ph.dirty = true; }, { passive: false });
+    root.append(cv, ph.ui);
+    if (document.fonts && document.fonts.load) Promise.all(['40px "Dela Gothic One"', 'italic 800 40px "Saira Extra Condensed"', '40px VT323'].map(f => document.fonts.load(f).catch(() => {}))).then(() => { if (this.photo) this.photo.dirty = true; });
+  },
+  photoInfo() {
+    const sp = this.P.sp;
+    return { car: CARS[this.c.model].name, ps: Math.round(sp.ps), nm: Math.round(sp.nm), track: this.tg.name, date: tapeDate(S.day), day: S.day };
+  },
+  photoRender() {
+    const ph = this.photo; if (!ph.dirty) return; ph.dirty = false;
+    const r = this.renderer, P = this.P, cam = this.photoCam || (this.photoCam = new THREE.PerspectiveCamera(48, 1, 0.2, 3200));
+    const size = r.getDrawingBufferSize(new THREE.Vector2());
+    cam.aspect = size.x / size.y; cam.fov = ph.fov; cam.updateProjectionMatrix();
+    const cp = Math.cos(ph.pitch), tx = P.x, ty = P.y + ph.lift, tz = P.z;
+    cam.position.set(tx + Math.sin(ph.yaw) * cp * ph.dist, ty + Math.sin(ph.pitch) * ph.dist, tz + Math.cos(ph.yaw) * cp * ph.dist);
+    cam.lookAt(tx, ty, tz);
+    this.sky.position.copy(cam.position); this.stars.position.copy(cam.position);
+    r.render(this.scene, cam);
+    photoCompose(ph.cv, r.domElement, ph.f, this.photoInfo());
+    this.sky.position.copy(this.cam.position); this.stars.position.copy(this.cam.position);
+  },
+  photoClose() {
+    const ph = this.photo; if (!ph) return;
+    ph.cv.remove(); ph.ui.remove(); this.photo = null; $('#race').classList.remove('photo');
+    this.paused = false; this.pause();
+  },
+  photoSave() {
+    const ph = this.photo; if (!ph || ph.saving) return; ph.saving = true;
+    ph.dirty = true; this.photoRender();
+    const fl = el('div', { class: 'photo-flash' }); $('#race').append(fl); setTimeout(() => fl.remove(), 450);
+    Audio2.click(); setTimeout(() => Audio2.click(), 90);
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    const name = `yoru-toge-${this.tg.id}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}.jpg`;
+    ph.cv.toBlob(async (blob) => {
+      if (!blob) { ph.saving = false; toast('Nem sikerült elkészíteni a képet.', 'bad'); return; }
+      const r = await offerFile(name, blob);
+      ph.saving = false;
+      if (r === 'saved' || r === 'downloaded') toast('Kép elmentve.', 'good'); else if (r === 'shared') toast('Kép megosztva.', 'good'); else if (r === 'failed') toast('Ebben a nézetben nem tudom elmenteni a képet.', 'bad');
+      if (r !== 'declined' && r !== 'failed') { S.stats.photos = (S.stats.photos || 0) + 1; save(); }
+    }, 'image/jpeg', 0.92);
   },
   teardown() {
     this.active = false; cancelAnimationFrame(this.raf);
@@ -788,9 +944,71 @@ const Race = {
     if (this.renderer) { this.renderer.dispose(); this.renderer.forceContextLoss && this.renderer.forceContextLoss(); }
     CarModel.reset();
     this.cup = null; this.splashT = 0;
-    this.renderer = null; this.scene = null; this.disposables = null; this._glow = null; this.camInit = false; this.paused = false;
+    this.renderer = null; this.scene = null; this.disposables = null; this._glow = null; this.camInit = false; this.paused = false; this.photo = null; this.photoCam = null; this.dr = null;
     const root = $('#race'); root.replaceChildren(); root.hidden = true; root.className = '';
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
     UI.render();
   }
 };
+
+// ---------------------------------------------------------------- photo filters (2D post-processing of the rendered frame)
+let _grain = null;
+function grainTile() {
+  if (_grain) return _grain;
+  const c = document.createElement('canvas'); c.width = c.height = 192; const g = c.getContext('2d'), im = g.createImageData(192, 192);
+  for (let i = 0; i < im.data.length; i += 4) { const v = 128 + (Math.random() - 0.5) * 230; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+  g.putImageData(im, 0, 0); return (_grain = c);
+}
+function photoCompose(cv, src, f, info) {
+  const sw = src.width, sh = src.height; let w = sw, h = sh, sx = 0;
+  if (f === 'mag') { w = Math.min(sw, Math.round(sh * 0.75)); sx = Math.round((sw - w) / 2); }
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const g = cv.getContext('2d'), u = h / 720, d = info.date, z = n => String(n).padStart(2, '0');
+  g.save();
+  g.filter = { film: 'contrast(1.06) saturate(1.2) sepia(0.14) brightness(1.12)', vhs: `saturate(1.5) contrast(1.15) brightness(1.06) blur(${(0.8 * u).toFixed(2)}px)`, mag: 'contrast(1.1) saturate(1.12) brightness(1.06)', bw: 'grayscale(1) contrast(1.45) brightness(1.1)' }[f] || 'none';
+  g.drawImage(src, sx, 0, w, h, 0, 0, w, h); g.filter = 'none';
+  const grain = (a, mode) => { g.globalAlpha = a; g.globalCompositeOperation = mode || 'overlay'; g.fillStyle = g.createPattern(grainTile(), 'repeat'); g.fillRect(0, 0, w, h); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; };
+  const vignette = (a) => { const r = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.hypot(w, h) * 0.6); r.addColorStop(0, 'rgba(0,0,0,0)'); r.addColorStop(1, `rgba(0,0,0,${a})`); g.fillStyle = r; g.fillRect(0, 0, w, h); };
+  const txt = (t, x, y, font, col, align, glow) => { g.font = font; g.textAlign = align || 'left'; g.textBaseline = 'alphabetic'; if (glow) { g.shadowColor = glow; g.shadowBlur = 8 * u; } g.fillStyle = col; g.fillText(t, x, y); g.shadowBlur = 0; g.shadowColor = 'transparent'; };
+  const fit = (t, size, maxW, tpl) => { g.font = tpl(size); const m = g.measureText(t).width; return m > maxW ? size * maxW / m : size; };
+  const MON = ['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUN.', 'JUL.', 'AUG.', 'SEP.', 'OCT.', 'NOV.', 'DEC.'];
+  if (f === 'film') { // a disposable camera: warm, grainy, the date burnt into the corner
+    g.globalCompositeOperation = 'soft-light'; g.fillStyle = 'rgba(255,170,90,0.35)'; g.fillRect(0, 0, w, h);
+    const lk = g.createRadialGradient(0, h * 0.3, 0, 0, h * 0.3, w * 0.35); lk.addColorStop(0, 'rgba(255,120,40,0.35)'); lk.addColorStop(1, 'rgba(255,120,40,0)');
+    g.globalCompositeOperation = 'screen'; g.fillStyle = lk; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over';
+    grain(0.22); vignette(0.55);
+    txt(`'${String(d.getFullYear()).slice(2)} ${z(d.getMonth() + 1)} ${z(d.getDate())}`, w - 40 * u, h - 36 * u, `${Math.round(56 * u)}px VT323, monospace`, '#ff9f45', 'right', 'rgba(255,110,20,0.9)');
+  } else if (f === 'vhs') { // a camcorder tape: colour bleed, scan lines, the on-screen display
+    g.globalCompositeOperation = 'screen'; g.globalAlpha = 0.3; g.filter = 'sepia(1) saturate(8) hue-rotate(-40deg)'; g.drawImage(src, sx, 0, w, h, 4 * u, 0, w, h); g.filter = 'none'; g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    g.fillStyle = 'rgba(0,0,0,0.25)'; const st = Math.max(2, Math.round(3 * u)), lh = Math.max(1, Math.round(u)); for (let y = 0; y < h; y += st) g.fillRect(0, y, w, lh);
+    g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(0, h * 0.86, w, 14 * u); g.fillStyle = 'rgba(255,255,255,0.04)'; g.fillRect(0, h * 0.9, w, 5 * u);
+    grain(0.14, 'screen'); vignette(0.45);
+    const F = `${Math.round(48 * u)}px VT323, monospace`, sh = 'rgba(0,0,0,0.9)';
+    txt('PLAY ▶', 44 * u, 74 * u, F, '#f4f4f4', 'left', sh); txt('SP', 44 * u, h - 44 * u, F, '#f4f4f4', 'left', sh);
+    txt(`${MON[d.getMonth()]} ${z(d.getDate())} 1998`, w - 44 * u, h - 88 * u, F, '#f4f4f4', 'right', sh); txt('AM 2:47', w - 44 * u, h - 44 * u, F, '#f4f4f4', 'right', sh);
+  } else if (f === 'bw') { grain(0.32); vignette(0.65); }
+  else if (f === 'mag') { // the cover of NIGHT PASS, the magazine everyone on the mountain reads
+    const top = g.createLinearGradient(0, 0, 0, h * 0.36); top.addColorStop(0, 'rgba(0,0,0,0.62)'); top.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = top; g.fillRect(0, 0, w, h * 0.36);
+    const bot = g.createLinearGradient(0, h * 0.58, 0, h); bot.addColorStop(0, 'rgba(0,0,0,0)'); bot.addColorStop(1, 'rgba(0,0,0,0.8)'); g.fillStyle = bot; g.fillRect(0, h * 0.58, w, h * 0.42);
+    vignette(0.3);
+    const pad = w * 0.05;
+    txt('TOUGE · STREET · TUNE', pad, pad + 20 * u, `700 ${Math.round(22 * u)}px "Saira Extra Condensed", sans-serif`, '#ffffff');
+    const mtpl = s => `${Math.round(s)}px "Dela Gothic One", sans-serif`, ms = fit('NIGHT PASS', 200 * u, w - pad * 2, mtpl);
+    g.font = mtpl(ms); g.textAlign = 'left'; g.lineJoin = 'round'; const my = pad + 30 * u + ms * 0.84;
+    g.lineWidth = Math.max(2, ms * 0.07); g.strokeStyle = '#ffffff'; g.strokeText('NIGHT PASS', pad, my); g.fillStyle = '#e3202b'; g.fillText('NIGHT PASS', pad, my);
+    txt('ナイトパス', w - pad, my + 32 * u, `${Math.round(24 * u)}px "Dela Gothic One", sans-serif`, '#ffd23a', 'right');
+    txt('1998年12月号 · 680円', pad, my + 30 * u, `600 ${Math.round(18 * u)}px "Saira", sans-serif`, '#ffffff');
+    txt('峠の新星', pad, my + 118 * u, `${Math.round(70 * u)}px "Dela Gothic One", sans-serif`, '#ffffff', 'left', 'rgba(0,0,0,0.85)');
+    const ltpl = s => `italic 800 ${Math.round(s)}px "Saira Extra Condensed", sans-serif`, line = `A ${info.track} új csillaga`;
+    txt(line, pad, my + 160 * u, ltpl(fit(line, 34 * u, w - pad * 2, ltpl)), '#ffd23a', 'left', 'rgba(0,0,0,0.85)');
+    const bw = 104 * u, bh = 62 * u, bx = w - pad - bw, by = h - pad - bh;
+    const name = info.car.toUpperCase(), ntpl = s => `italic 800 ${Math.round(s)}px "Saira Extra Condensed", sans-serif`;
+    txt(name, pad, h - pad - 52 * u, ntpl(fit(name, 78 * u, w - pad * 2 - bw - 14 * u, ntpl)), '#ffffff', 'left', 'rgba(0,0,0,0.8)');
+    txt(`${info.ps} LE · ${info.nm} Nm · saját építés`, pad, h - pad - 14 * u, `600 ${Math.round(22 * u)}px "Saira", sans-serif`, '#ffffff');
+    g.fillStyle = '#fff'; g.fillRect(bx, by, bw, bh); g.fillStyle = '#000';
+    let x = bx + 8 * u, r = info.day * 9301 + 49297;
+    while (x < bx + bw - 10 * u) { r = (r * 9301 + 49297) % 233280; const lw = (1 + (r % 3)) * u; g.fillRect(x, by + 6 * u, lw, bh - 22 * u); x += lw + (1 + (r % 2)) * u * 1.5; }
+    txt(`4 910${1000 + (info.day % 9000)} 0${(info.day % 9) + 1}`, bx + bw / 2, by + bh - 4 * u, `${Math.round(11 * u)}px monospace`, '#000', 'center');
+  }
+  g.restore();
+}
