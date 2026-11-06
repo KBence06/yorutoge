@@ -1,0 +1,4 @@
+# Netlify builds the game from src/ on every push to main.
+[build]
+  command = "bash build.sh netlify"
+  publish = "dist"

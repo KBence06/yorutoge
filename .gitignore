@@ -1,0 +1,8 @@
+dist/
+test.html
+yoru-toge-artifact.html
+yoru-toge.html
+yoru-toge-offline.html
+*.zip
+shots/
+.DS_Store
