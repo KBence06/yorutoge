@@ -113,7 +113,7 @@ Meet.saleCard = function (W) {
 // how much a car turns heads: what is bolted on, how it sits, how clean it is
 function styleScore(c) {
   const v = carVisual(c); let s = 20 + 22 * (c.cond ? c.cond.body : 0.9);
-  const pts = { wing: 6, kit: 7, bumper: 7, canards: 3, diffuser: 4, flares: 8, roofscoop: 3, louver: 4, mirrors: 3, pipes: 6, pod: 3, towhook: 1, oilcooler: 3, tirelet: 2, intneon: 3, neon: 6, tint: 3, banner: 2, decal: 2, cage: 3, seat: 2, tail: 3, fogs: 1 };
+  const pts = { wing: 6, kit: 7, bumper: 7, canards: 3, diffuser: 4, flares: 8, roofscoop: 3, louver: 4, mirrors: 3, pipes: 6, pod: 3, towhook: 1, tsuri: 2, oilcooler: 3, tirelet: 2, intneon: 3, neon: 6, tint: 3, banner: 2, decal: 2, cage: 3, seat: 2, tail: 3, fogs: 1 };
   for (const k of Object.keys(pts)) if (v[k]) s += pts[k];
   if (v.hood) s += 4; if (v.lights) s += 2; if (v.wheel && v.wheel !== 'stock') s += 9; s += Math.min(8, (v.lower || 0) * 110);
   if (v.finish && v.finish !== 'gloss') s += 5; if (v.livery) s += 6; if (v.camber && (v.camber[0] < -2 || v.camber[1] < -2)) s += 3;

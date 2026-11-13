@@ -538,6 +538,7 @@ const CarModel = {
       const pz = fz - 0.34, py = shapeTopAt(sh, pz) + 0.1; box(W * 0.62, 0.02, 0.03, trimM, 0, py - 0.085, pz);
       for (const fx of [-0.24, -0.08, 0.08, 0.24]) { const hg = new THREE.CylinderGeometry(0.08, 0.06, 0.09, 14); hg.rotateX(Math.PI / 2); add(hg, trimM, W * fx, py, pz); add(new THREE.CircleGeometry(0.072, 14), headM, W * fx, py, pz + 0.047); lightGlows.push([W * fx, py, pz + 0.07]); }
     }
+    if (vis.tsuri) { const ty3 = Math.max(0.22, yF + 0.1), rg3 = new THREE.TorusGeometry(0.05, 0.012, 6, 14), whM = mk(new THREE.MeshLambertMaterial({ color: 0xf2f2ee })), stM = mk(new THREE.MeshLambertMaterial({ color: 0xc8202a })); rg3.rotateY(Math.PI / 2); const zx = rearX(W * 0.28, ty3) - 0.03; add(rg3, whM, W * 0.28, ty3 - 0.05, zx); add(new THREE.BoxGeometry(0.02, 0.07, 0.012), stM, W * 0.28, ty3 + 0.03, zx); }
     if (vis.towhook) { const ty2 = Math.max(0.2, yF + 0.12), tg2 = new THREE.TorusGeometry(0.035, 0.011, 6, 12), redM = mk(new THREE.MeshLambertMaterial({ color: 0xd0161e })); tg2.rotateY(Math.PI / 2); add(tg2, redM, -W * 0.3, ty2, frontX(W * 0.3, ty2) + 0.04); }
     if (vis.oilcooler) { const oy = 0.36 - sh.drop, oz = frontX(W * 0.3, oy) + 0.04; box(0.24, 0.1, 0.035, chromeM, -W * 0.22, oy, oz); for (let i = 0; i < 5; i++) box(0.22, 0.004, 0.04, darkM, -W * 0.22, oy - 0.035 + i * 0.018, oz); for (const k of [-1, 1]) tube(V3(-W * 0.22 + k * 0.1, oy, oz), V3(-W * 0.08 + k * 0.03, oy - 0.14, oz - 0.12), 0.011, chromeM); }
     if (D.bed) { // kei truck: cab guard frame and the drop sides of the bed

@@ -420,7 +420,7 @@ const UI = {
     // online
     wrap.append(el('div', { class: 'panel meet-cta' },
       el('div', null, el('div', { class: 'eyebrow' }, 'Online · 対戦'), el('h3', { style: 'margin:2px 0 4px' }, 'Verseny egy haverral'),
-        el('p', { class: 'muted', style: 'margin:0' }, Net.available() ? 'Nyiss egy szobát, küldd át a négyjegyű kódot, és mehettek egymás ellen a hegyen vagy az egyenesen, mindenki a saját autójával.' : 'Az online verseny a webes változatban érhető el (a Netlify-oldalon). Itt, a Claude-on belül a böngésző nem enged közvetlen kapcsolatot két játékos között.')),
+        el('p', { class: 'muted', style: 'margin:0' }, Net.available() ? 'Gyors meccs bárkivel, vagy saját szoba négyjegyű kóddal a haveroknak. Legfeljebb négyen mentek egymás ellen a hegyen vagy az egyenesen, mindenki a saját autójával.' : 'Az online verseny a webes változatban érhető el (a Netlify-oldalon). Itt, a Claude-on belül a böngésző nem enged közvetlen kapcsolatot két játékos között.')),
       el('button', { class: 'btn primary', disabled: !Net.available() || !!ready, onclick: () => Net.lobby() }, 'Szoba')));
     const g = el('div', { class: 'grid2' });
     g.append(dz);

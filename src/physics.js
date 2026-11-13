@@ -86,7 +86,7 @@ class PlayerCar {
     this.vx = 0; this.vz = 0; this.w = 0; this.delta = 0;
     this.rpm = spec.E.idle; this.gear = 1; this.shiftT = 0; this.thr = 0; this.brk = 0; this.boost = 0; this.spin = 0;
     this.ax = 0; this.ay = 0; this.idx = Math.floor(s0); this.s = s0; this.lat = lat0;
-    this.knock = false; this.clutchSlip = false; this.limiter = false; this.blown = false; this.revT = 0;
+    this.knock = false; this.clutchSlip = false; this.limiter = false; this.blown = false; this.revT = 0; this.nosLeft = spec.nos ? 1 : 0; this.nosOn = false; this.nosReq = false; this.nosAmt = 0; this.nosCool = 0;
     this.slipF = 0; this.slipR = 0; this.slide = 0; this.wheelspin = false; this.locked = false;
     this.dmgBody = 0; this.dmgEngine = 0; this.wear = 0; this.clutchWear = 0; this.hits = []; this.hitCount = 0;
     this.speed = 0; this.vLong = 0; this.vLat = 0; this.t = 0;
@@ -154,9 +154,16 @@ class PlayerCar {
       const tgt = Math.max(wheelRpm * (1 + this.spin), launch, sp.E.idle);
       this.rpm += (tgt - this.rpm) * Math.min(1, dt * 30 / sp.inertia);
       this.limiter = this.rpm >= sp.curve.limiter;
-      if (this.limiter) { this.rpm = sp.curve.limiter; Te = -20; this.engineTorque(this.rpm, 0); }
+      if (this.limiter) { this.nosOn = false; this.rpm = sp.curve.limiter; Te = -20; this.engineTorque(this.rpm, 0); }
       else {
         Te = this.engineTorque(this.rpm, thr);
+        // nitrous: a fixed shot of power while the button is held at full throttle
+        const want = this.nosReq && sp.nos > 0 && this.nosLeft > 0 && this.thr > 0.85 && this.rpm > 3000 && this.gear > 1 && !this.blown;
+        if (this.wheelspin) { this.nosAmt = 0; this.nosCool = 0.5; } // the controller backs off when the tyres let go
+        this.nosCool = Math.max(0, this.nosCool - dt);
+        this.nosAmt = want && this.nosCool <= 0 ? Math.min(1, this.nosAmt + dt * 2) : 0;
+        this.nosOn = this.nosAmt > 0;
+        if (this.nosOn) { const k = this.nosAmt; Te += k * sp.nos * 735.5 / (this.rpm * 0.10472); this.nosLeft = Math.max(0, this.nosLeft - k * dt / 10); this.dmgEngine += 0.0022 * (sp.nos / 50) * k * dt; }
         if (thr < 0.05) Te = -0.12 * sp.nm * (this.rpm / sp.curve.limiter) - 8;
       }
       this.clutchSlip = false;

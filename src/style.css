@@ -561,3 +561,15 @@ h3 { margin: 0 0 8px; font-family: var(--f-disp); font-weight: 700; font-size: 1
 @media (prefers-reduced-motion: reduce) { .netwait { animation: none; } }
 .netwho { display: flex; flex-direction: column; gap: 2px; } .netwho b { font-family: var(--f-disp); font-size: 22px; font-style: italic; }
 .netres { display: flex; flex-direction: column; gap: 2px; } .netres b { font-family: var(--f-disp); font-size: 24px; font-style: italic; text-transform: uppercase; } .netres.win b { color: var(--ok); } .netres.lose b { color: var(--brake); }
+
+/* v11: rooms for four */
+.netquick { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-color: var(--sodium); }
+.netplayers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; } @media (max-width: 700px) { .netplayers { grid-template-columns: 1fr 1fr; } }
+.netwho.me { border-color: var(--sodium); } .netwho.empty { align-items: center; justify-content: center; border-style: dashed; opacity: .6; min-height: 58px; }
+.netcode.pub b { font-size: 40px; }
+.netboard { display: flex; flex-direction: column; gap: 4px; } .nbrow { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: baseline; padding: 3px 0; border-top: 1px solid rgba(255,255,255,.07); }
+.nbrow.me b { color: var(--sodium); } .nbrow.first .nbpos { color: var(--neon); } .nbpos { font-family: var(--f-disp); font-style: italic; font-size: 18px; } .nbt { font-family: var(--f-crt, monospace); font-size: 20px; }
+
+.pedal.nos { width: 62px; height: 62px; border-radius: 50%; font-size: 15px; border-color: rgba(74,123,255,.8); background: linear-gradient(to top, rgba(47,123,255,.5) var(--n, 100%), rgba(10,12,18,.42) var(--n, 100%)); }
+.pedal.nos.fire { box-shadow: 0 0 18px 4px rgba(90,150,255,.8); color: #fff; } .pedal.nos.empty { opacity: .35; }
+.netcode.pub b { letter-spacing: .04em; padding-left: 0; }

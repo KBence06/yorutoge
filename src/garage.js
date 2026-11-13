@@ -11,7 +11,7 @@ function carVisual(c) {
   for (const ip of Object.values(c.parts || {})) {
     const f = PART[ip.id] && PART[ip.id].fx || {};
     for (const k of ['wing', 'hood', 'decal', 'wheel', 'lights', 'tail', 'bumper', 'mirrors', 'pipes', 'flares']) if (f[k]) v[k] = f[k];
-    for (const k of ['kit', 'cage', 'fogs', 'tint', 'banner', 'neon', 'canards', 'diffuser', 'roofscoop', 'louver', 'pod', 'towhook', 'oilcooler', 'tirelet', 'intneon', 'seat', 'strip']) if (f[k]) v[k] = true;
+    for (const k of ['kit', 'cage', 'fogs', 'tint', 'banner', 'neon', 'canards', 'diffuser', 'roofscoop', 'louver', 'pod', 'towhook', 'oilcooler', 'tirelet', 'intneon', 'seat', 'strip', 'tsuri']) if (f[k]) v[k] = true;
   }
   const susp = c.parts && c.parts.susp && PART[c.parts.susp.id].fx;
   if (susp && susp.lower) v.lower = susp.lower;
@@ -28,7 +28,15 @@ function lookVis(look) { return { finish: look.finish || 'gloss', livery: look.l
 // Livery graphics that sit on the door area. Drawn facing right (front of the car on the right).
 function drawLiveryGraphic(ctx, kind, col, x, y, w, h) {
   ctx.save(); ctx.translate(x, y);
-  if (kind === 'kanji') {
+  if (kind === 'retro') {
+    // three stripes that step up toward the tail, eighties style
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = col; ctx.globalAlpha = 1 - i * 0.28; const y0 = h * (0.5 + i * 0.16), t = h * 0.11; ctx.beginPath(); ctx.moveTo(w, y0); ctx.lineTo(w * 0.42, y0); ctx.lineTo(w * 0.22, y0 - h * 0.42); ctx.lineTo(0, y0 - h * 0.42); ctx.lineTo(0, y0 - h * 0.42 + t); ctx.lineTo(w * 0.18, y0 - h * 0.42 + t); ctx.lineTo(w * 0.38, y0 + t); ctx.lineTo(w, y0 + t); ctx.closePath(); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  } else if (kind === 'kata') {
+    ctx.fillStyle = col; ctx.font = `${Math.round(h * 0.5)}px ${cssVar('--f-jp')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save(); ctx.translate(w * 0.5, h * 0.5); ctx.transform(1, 0, -0.25, 1, 0, 0); ctx.fillText('ドリフト', 0, 0, w * 0.96); ctx.restore();
+    ctx.fillRect(w * 0.06, h * 0.86, w * 0.88, h * 0.05);
+  } else if (kind === 'kanji') {
     ctx.fillStyle = col; ctx.font = `${Math.round(h * 0.95)}px ${cssVar('--f-jp')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('峠', w * 0.5, h * 0.52);
     ctx.font = `800 italic ${Math.round(h * 0.16)}px ${cssVar('--f-disp')}`; ctx.fillText('TŌGE', w * 0.5, h * 0.98);
@@ -58,7 +66,7 @@ function drawLiveryGraphic(ctx, kind, col, x, y, w, h) {
   }
   ctx.restore();
 }
-const GRAPHIC_LIV = new Set(['tribal', 'kanji', 'flames', 'bolt', 'checker']), DIRECTIONAL_LIV = new Set(['tribal', 'flames', 'bolt', 'checker']);
+const GRAPHIC_LIV = new Set(['tribal', 'kanji', 'flames', 'bolt', 'checker', 'retro', 'kata']), DIRECTIONAL_LIV = new Set(['tribal', 'flames', 'bolt', 'checker', 'retro']);
 // door stickers, drawn into a w x h box (text reads left to right)
 function drawDecal(ctx, id, w, h) {
   ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -245,6 +253,7 @@ function drawCarSide(ctx, c, cx, groundY, len) {
   if (v.roofscoop) { let top = 0, zt = 0; for (let z = sh.cowlZ; z > sh.pillarZ - 0.3; z -= 0.05) { const t = shapeTopAt(sh, z); if (t > top + 0.002) { top = t; zt = z; } } ctx.fillStyle = shade(c.paint, -0.15); ctx.beginPath(); ctx.moveTo(X(zt + 0.1), Y(top + 0.08)); ctx.lineTo(X(zt - 0.3), Y(top + 0.04)); ctx.lineTo(X(zt - 0.34), Y(top - 0.01)); ctx.lineTo(X(zt + 0.1), Y(top - 0.01)); ctx.fill(); }
   if (v.pod) { const pz = fz - 0.34, py = shapeTopAt(sh, pz) + 0.1; ctx.fillStyle = '#15161a'; ctx.beginPath(); ctx.ellipse(X(pz), Y(py), 0.06 * k, 0.085 * k, 0, 0, 7); ctx.fill(); ctx.fillStyle = v.lights === 'yellow' ? '#ffd34d' : '#e8eefc'; ctx.fillRect(X(pz + 0.03), Y(py + 0.07), 0.03 * k, 0.14 * k); }
   if (v.mirrors === 'fender' || (D.fenderMirror && !v.mirrors)) { const fmz = sh.wheels.zf + 0.05, fmy = shapeTopAt(sh, fmz); ctx.strokeStyle = '#c9ccd2'; ctx.lineWidth = Math.max(1, 0.012 * k); ctx.beginPath(); ctx.moveTo(X(fmz), Y(fmy)); ctx.lineTo(X(fmz), Y(fmy + 0.09)); ctx.stroke(); ctx.fillStyle = '#c9ccd2'; ctx.fillRect(X(fmz - 0.03), Y(fmy + 0.14), 0.06 * k, 0.06 * k); }
+  if (v.tsuri) { ctx.strokeStyle = '#f2f2ee'; ctx.lineWidth = Math.max(2, 0.022 * k); ctx.beginPath(); ctx.arc(X(rz + 0.05), Y(sh.up[0][1] - 0.02), 0.05 * k, 0, 7); ctx.stroke(); ctx.fillStyle = '#c8202a'; ctx.fillRect(X(rz + 0.05) - 0.012 * k, Y(sh.up[0][1] + 0.1), 0.024 * k, 0.07 * k); }
   if (v.towhook) { ctx.strokeStyle = '#d0161e'; ctx.lineWidth = Math.max(2, 0.02 * k); ctx.beginPath(); ctx.arc(X(fz + 0.03), Y(yLow + 0.1), 0.03 * k, 0, 7); ctx.stroke(); }
   // wheels
   for (const zc of [sh.wheels.zr, sh.wheels.zf]) drawWheel(ctx, X(zc), Y(sh.wheels.r), sh.wheels.r * k, v.wheel, { bbk: !!(c.parts && c.parts.brakes), front: zc === sh.wheels.zf, white: v.tirelet });
@@ -299,6 +308,15 @@ function drawWheel(ctx, x, y, r, style, o) {
   } else if (style === 'white') {
     ctx.fillStyle = '#f2f2ee'; ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill();
     ctx.save(); ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + Math.PI / 6; ctx.moveTo(x + Math.cos(a - 0.22) * rr * 0.34, y + Math.sin(a - 0.22) * rr * 0.34); ctx.lineTo(x + Math.cos(a - 0.3) * rr * 0.86, y + Math.sin(a - 0.3) * rr * 0.86); ctx.lineTo(x + Math.cos(a + 0.3) * rr * 0.86, y + Math.sin(a + 0.3) * rr * 0.86); ctx.lineTo(x + Math.cos(a + 0.22) * rr * 0.34, y + Math.sin(a + 0.22) * rr * 0.34); ctx.closePath(); } ctx.clip(); behind(); ctx.restore();
+  } else if (style === 'tri') {
+    behind(); ctx.fillStyle = '#f2f2ee';
+    for (let i = 0; i < 3; i++) { ctx.save(); ctx.translate(x, y); ctx.rotate(i * Math.PI * 2 / 3); ctx.beginPath(); ctx.moveTo(-rr * 0.22, 0); ctx.lineTo(-rr * 0.17, -rr * 0.9); ctx.lineTo(rr * 0.17, -rr * 0.9); ctx.lineTo(rr * 0.22, 0); ctx.fill(); ctx.restore(); }
+    ctx.strokeStyle = '#f2f2ee'; ctx.lineWidth = rr * 0.12; ctx.beginPath(); ctx.arc(x, y, rr * 0.93, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, rr * 0.26, 0, 7); ctx.fill();
+  } else if (style === 'gmesh') {
+    behind(); ctx.strokeStyle = '#c99b3c'; ctx.lineWidth = Math.max(1, rr * 0.035);
+    for (let i = 0; i < 12; i++) for (const d of [-0.3, 0.3]) { const a = i * Math.PI / 6; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * rr * 0.16, y + Math.sin(a) * rr * 0.16); ctx.lineTo(x + Math.cos(a + d) * rr * 0.66, y + Math.sin(a + d) * rr * 0.66); ctx.stroke(); }
+    { const lip = ctx.createLinearGradient(x - rr, y - rr, x + rr, y + rr); lip.addColorStop(0, '#f6f6f6'); lip.addColorStop(0.5, '#9aa0a8'); lip.addColorStop(1, '#ececec'); ctx.strokeStyle = lip; ctx.lineWidth = rr * 0.3; ctx.beginPath(); ctx.arc(x, y, rr * 0.84, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = '#c99b3c'; ctx.beginPath(); ctx.arc(x, y, rr * 0.17, 0, 7); ctx.fill();
   } else if (style === 'te' || style === 'wat' || style === 'star') {
     behind();
     const n = style === 'te' ? 6 : style === 'wat' ? 8 : 5, col = style === 'te' ? '#3a3d44' : style === 'wat' ? '#1b1c20' : '#d0d3d8', w0 = style === 'star' ? 0.25 : style === 'te' ? 0.085 : 0.085, w1 = style === 'star' ? 0.05 : style === 'te' ? 0.065 : 0.055, rim = style === 'te' ? 0.95 : 0.84;

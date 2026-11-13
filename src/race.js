@@ -26,7 +26,7 @@ const Race = {
       el('div', { class: 'row', style: 'justify-content:center;gap:8px' }, weatherBadge(this.wk), this.net ? el('span', { class: 'tag ok' }, 'Online · tét nélkül') : null, !this.dawn && !this.zero && !this.net && policeChance() > 0.05 ? el('span', { class: 'tag ' + (policeChance() > 0.3 ? 'bad' : 'warn') }, `Rendőr: ${heatLabel(S.heat || 0)}`) : null),
       this.wk !== 'clear' ? el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, `${WEATHER[this.wk].desc} Tapadás a gumijaiddal: ${Math.round(wetGrip(this.c, this.wk) * 100)}%.`) : null,
       this.dawn ? el('div', { class: 'line' }, `Hajnali fél öt. A Fujimura tofubolt rendelése a hegy ${tg.dir === 'down' ? 'aljára' : 'tetejére'} megy. Egy pohár víz áll a műszerfalon: ha kiloccsan, kevesebbet fizetnek. Ha a szalagkorlátnak mész, összetörik a tofu.`)
-      : this.net ? el('div', { class: 'line' }, `${rv.name} · ${CARS[rv.car].name}. Mindketten a saját képernyőtökön vezettek, a másik autója nem ütközik veled.`) : rv ? el('div', { class: 'line' }, `„${rv.line}” · ${CARS[rv.car].name}${rv.meet ? ` · tét ${fmtY(rv.prize)}` : ''}`) : this.drift ? this.driftIntro() : this.zero ? el('div', { class: 'line' }, `Négyszáz méter állórajtból. Visszaszámlálás alatt tartsd a gázt, hogy fordulaton induljon; kézi váltóval te döntöd el, mikor váltasz.${S.best.wangan ? ` Legjobb időd: ${S.best.wangan.toFixed(2)} s.` : ''}`) : this.taIntro(),
+      : this.net ? el('div', { class: 'line' }, this.net.rvs.map(v => `${v.name} · ${CARS[v.car].name}`).join(' — ') + '. Mindenki a saját képernyőjén vezet, a többiek autója nem ütközik veled.') : rv ? el('div', { class: 'line' }, `„${rv.line}” · ${CARS[rv.car].name}${rv.meet ? ` · tét ${fmtY(rv.prize)}` : ''}`) : this.drift ? this.driftIntro() : this.zero ? el('div', { class: 'line' }, `Négyszáz méter állórajtból. Visszaszámlálás alatt tartsd a gázt, hogy fordulaton induljon; kézi váltóval te döntöd el, mikor váltasz.${S.best.wangan ? ` Legjobb időd: ${S.best.wangan.toFixed(2)} s.` : ''}`) : this.taIntro(),
       this.drift ? null : el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, 'Bal hüvelykujj: húzd balra-jobbra a kormányzáshoz. Jobb oldalt gáz, fék, kézifék. Billentyűzeten nyilak, szóköz a kézifék, Q/E váltás.'),
       el('div', { class: 'row', style: 'justify-content:center' },
         el('button', { class: 'btn primary', id: 'rGo', style: 'min-width:160px;font-size:17px', onclick: () => this.net ? this.net.ready(this) : this.go() }, this.net ? 'Kész vagyok' : 'Indulás'),
@@ -77,9 +77,10 @@ const Race = {
     const T = this.T = buildTrack(tg); if (tg.drag) T.finish = T.start + 402.34;
     const wk = this.wk = (this.net && this.net.wk) || this.forceWeather || weatherNow(), W = this.W = WEATHER[wk];
     const sp = carSpec(this.c), wg = wetGrip(this.c, wk); sp.muF *= wg; sp.muR *= wg;
-    this.P = new PlayerCar(sp, T, T.start, rv ? -1.75 : 0, set);
+    this.P = new PlayerCar(sp, T, T.start, this.net ? this.net.lane : rv ? -1.75 : 0, set);
     this.aid = buildAidProfile(T, sp);
-    this.R = this.net ? new NetCar(T, T.start, 1.75) : rv ? new RivalCar(rv, T, T.start, 1.75, rivalWetGrip(wk) * (tg.rev ? 0.985 : 1)) : null;
+    this.NR = this.net ? this.net.rvs.map(v => Object.assign(new NetCar(T, T.start, v.lane), { nid: v.nid })) : null;
+    this.R = this.net ? this.NR[0] || null : rv ? new RivalCar(rv, T, T.start, 1.75, rivalWetGrip(wk) * (tg.rev ? 0.985 : 1)) : null;
     const root = $('#race');
     const renderer = this.renderer = new THREE.WebGLRenderer({ antialias: set.gfx === 'high', powerPreference: 'high-performance' });
     const dpr = window.devicePixelRatio || 1;
@@ -105,6 +106,15 @@ const Race = {
     const pv = carVisual(this.c);
     this.pMesh = this.buildCar(this.c.model, this.c.paint, pv, true, { plate: ['黒沢 330', '19-07'], turbo: !!this.c.parts.turbo, bbk: !!this.c.parts.brakes });
     if (this.R) this.rMesh = this.buildCar(rv.car, rv.color, rv.vis || Object.assign({ wing: rv.ps > 250 ? 'gt' : null, wheel: rv.ps > 300 ? 'spoke' : 'mesh', lower: 0.03, kit: rv.ps > 280 }, lookVis(rv.look || {})), true, { plate: [{ kurozawa: '黒沢 500', mikazuki: '三日月 300', okami: '狼坂 330', kasumi: '霞 300' }[tg.id] || '黒沢 500', rv.id === 'okami' ? '-- 99' : '24-11'] });
+    this.nMesh = this.net ? this.net.rvs.map((v, i) => i === 0 ? this.rMesh : this.buildCar(v.car, v.color, v.vis, false, { plate: ['黒沢 500', '24-11'] })) : null;
+    // name tags over the other players
+    if (this.net) this.net.rvs.forEach((v, i) => {
+      const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const g = cv.getContext('2d');
+      g.font = `800 italic 34px ${cssVar('--f-disp')}`; g.textAlign = 'center'; g.textBaseline = 'middle'; const w = Math.min(244, g.measureText(v.name).width + 28);
+      g.fillStyle = 'rgba(8,10,16,0.72)'; g.fillRect(128 - w / 2, 8, w, 48); g.fillStyle = '#4ee6d4'; g.fillRect(128 - w / 2, 52, w, 4); g.fillStyle = '#f2efe6'; g.fillText(v.name, 128, 31, 230);
+      const tex = new THREE.CanvasTexture(cv), mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }), sp = new THREE.Sprite(mat);
+      sp.scale.set(2.2, 0.55, 1); sp.position.y = SHAPES[v.car].H + 0.5; this.nMesh[i].g.add(sp); this.disposables.push(tex, mat);
+    });
     // ghost of the best practice run
     this.rec = []; this.recT = 0; this.ghost = null; this.gMesh = null;
     const gk = trackKey(tg);
@@ -448,8 +458,9 @@ const Race = {
     m.rot += P.vLong / m.rw * dt;
     for (const w of m.wheels) { w.wg.rotation.x = m.rot; if (w.front) w.spin.rotation.y = P.delta; }
     this.brakeLights(m, P.brk > 0.1);
-    if (this.R) {
-      const R = this.R, r = this.rMesh;
+    for (let k = 0, n = this.NR ? this.NR.length : this.R ? 1 : 0; k < n; k++) {
+      const R = this.NR ? this.NR[k] : this.R, r = this.NR ? this.nMesh[k] : this.rMesh;
+      if (R.gone) continue;
       r.g.position.set(R.x, R.y, R.z); r.g.rotation.y = R.h + R.yawVis;
       r.rot += R.v / r.rw * dt; for (const w of r.wheels) w.wg.rotation.x = r.rot;
       this.brakeLights(r, R.braking);
@@ -469,7 +480,7 @@ const Race = {
   },
   // on the strip the car holds its lane unless you steer hard yourself
   laneSteer(steer) {
-    const P = this.P, T = this.T, i = clamp(Math.floor(P.s), 0, T.N - 1), lane = this.rv || this.net ? -1.75 : 0;
+    const P = this.P, T = this.T, i = clamp(Math.floor(P.s), 0, T.N - 1), lane = this.net ? this.net.lane : this.rv ? -1.75 : 0;
     const fix = clamp((lane - P.lat) * 0.22 - angDiff(P.h, T.h[i]) * 1.6, -0.5, 0.5);
     return clamp(steer * 0.5 + fix, -1, 1);
   },
@@ -552,6 +563,7 @@ const Race = {
     const shiftBtn = (label, d) => { const b = el('div', { class: 'pedal', role: 'button', 'aria-label': d > 0 ? 'Felváltás' : 'Visszaváltás' }, label); b.addEventListener('pointerdown', (e) => { e.preventDefault(); this.P.shift(d); }); return b; };
     const pedals = el('div', { class: 'pedals' },
       !auto ? el('div', { class: 'shift' }, shiftBtn('▲', 1), shiftBtn('▼', -1)) : null,
+      (this.nosBtn = null, this.P.sp.nos) ? el('div', { class: 'shift' }, this.nosBtn = pedal('nos', 'N₂O', 'nos')) : null,
       el('div', { class: 'shift' }, pedal('hb', 'KÉZI\u00ADFÉK', 'hand'), pedal('brk', 'FÉK', 'brake')),
       pedal('gas', 'GÁZ', 'gas'));
     if (st.steer === 'buttons') {
@@ -588,6 +600,7 @@ const Race = {
     if (this.drift) root.classList.add('drifting');
     root.append(hud, ctl, top, this.countEl, rot);
     this.h = { cop: $('#hCop'), copTxt: $('#hCopTxt'), copBar: $('#hCopBar'), copSay: $('#hCopSay'), note: $('#hNote'), noteIco: $('#hNoteIco'), noteTxt: $('#hNoteTxt'), noteSub: $('#hNoteSub'), pos: $('#hPos'), gap: $('#hGap'), time: $('#hTime'), warn: $('#hWarn'), gear: $('#hGear'), spd: $('#hSpd'), me: $('#hProgMe'), rv: $('#hProgRv'), boost: $('#hBoost'), tach: $('#hTach').getContext('2d'), drChain: $('#hDrChain'), drMult: $('#hDrMult'), drAng: $('#hDrAng'), drPop: $('#hDrPop'), drift: $('#hDrift'), vhsTc: $('#hVhsTc') };
+    this.nMark = this.NR ? this.NR.map((o, k) => k === 0 ? this.h.rv : this.h.rv.parentNode.appendChild(el('i', { class: 'rv' }))) : null;
     this.hudT = 0;
     this.onKey = (e) => {
       const down = e.type === 'keydown', k = e.key;
@@ -612,7 +625,8 @@ const Race = {
       steer: clamp(inp.steer + inp.kSteer + inp.bSteer, -1, 1),
       gas: Math.max(inp.gas, k['arrowup'] || k['w'] ? 1 : 0),
       brake: Math.max(inp.brake, k['arrowdown'] || k['s'] ? 1 : 0),
-      hand: inp.hand || !!k[' ']
+      hand: inp.hand || !!k[' '],
+      nos: !!inp.nos || !!k['n'] || !!k['shift']
     };
   },
   pause() {
@@ -656,13 +670,15 @@ const Race = {
     while (this.acc >= H) {
       this.acc -= H;
       if (this.phase === 'count') { P.step(H, { steer: inp.steer * 0.2, gas: inp.gas, brake: 1, hand: false }); P.vx = P.vz = 0; P.w = 0; continue; }
-      if (this.phase === 'done') { P.step(H, { steer: this.zero ? this.laneSteer(0) : 0, gas: 0, brake: this.zero ? 0.85 : 0.6, hand: false }); if (R) R.step(H, P, 0.7); continue; }
+      if (this.phase === 'done') { P.step(H, { steer: this.zero ? this.laneSteer(0) : 0, gas: 0, brake: this.zero ? 0.85 : 0.6, hand: false }); if (this.NR) for (const o of this.NR) o.step(H); else if (R) R.step(H, P, 0.7); continue; }
       if (this.zero) inp.steer = this.laneSteer(inp.steer);
+      P.nosReq = inp.nos;
       P.step(H, applyAids(P, T, this.aid, inp, this.set));
-      if (R) {
+      if (this.NR) for (const o of this.NR) o.step(H);
+      else if (R) {
         const gap = R.s - P.s, band = gap > 150 ? 0.95 : gap > 70 ? 0.975 : 1; // no catch-up boost when the rival is behind
         R.step(H, P, band);
-        if (!this.net) { const hit = carContact(P, R); if (hit > 1.5) Audio2.impact(hit); }
+        const hit = carContact(P, R); if (hit > 1.5) Audio2.impact(hit);
       }
       if (this.police) { this.police.update(H, P); const hit = carContact(P, this.police); if (hit > 1.5) Audio2.impact(hit); }
       this.time += H;
@@ -679,7 +695,7 @@ const Race = {
     // finish conditions
     if (this.phase === 'race') {
       if (P.s >= T.finish) { if (this.zr) this.zr.et = this.time; this.finish(this.net ? (this.net.finT != null && this.net.finT < this.time ? 'lose' : 'win') : R && R.s >= T.finish ? 'lose' : 'win'); }
-      else if (this.net ? this.net.finT != null : R && R.s >= T.finish && !this.zero) this.finish('lose');
+      else if (this.net ? this.net.endAt != null && this.time > this.net.endAt : R && R.s >= T.finish && !this.zero) this.finish('lose');
       else if (P.blown || P.dmgEngine >= 1) this.finish('blown');
       else if (this.c.cond.body - P.dmgBody <= 0) this.finish('wreck');
       else if (R && !this.net && !this.zero && R.s - P.s > 420) this.finish('gone');
@@ -702,14 +718,22 @@ const Race = {
     this.drawTach(); if (this.cup) this.drawCup();
     this.hudT += dt; if (this.hudT > 0.07) { this.hudT = 0; this.updateHud(); }
   },
+  netPush(id, m) { const o = this.NR && this.NR.find(c => c.nid === id); if (o && !o.gone) o.push(m); },
+  netGone(id) { const k = this.NR ? this.NR.findIndex(c => c.nid === id) : -1; if (k < 0) return; this.NR[k].gone = true; if (this.nMesh && this.nMesh[k]) this.nMesh[k].g.visible = false; if (this.nMark && this.nMark[k]) this.nMark[k].hidden = true; },
   updateHud() {
     const P = this.P, R = this.R, T = this.T, h = this.h;
     h.spd.textContent = Math.round(P.speed * 3.6);
     h.gear.textContent = P.gear === -1 ? 'R' : P.gear;
+    if (this.nosBtn) { this.nosBtn.style.setProperty('--n', (P.nosLeft * 100).toFixed(0) + '%'); this.nosBtn.classList.toggle('fire', P.nosOn); this.nosBtn.classList.toggle('empty', P.nosLeft <= 0); }
     h.time.textContent = fmtTime(this.time);
     const prog = s => clamp((s - T.start) / (T.finish - T.start), 0, 1) * 100 + '%';
     h.me.style.left = prog(P.s);
-    if (R) {
+    if (this.NR) {
+      let ahead = 0, near = null, live = 0;
+      this.NR.forEach((o, k) => { if (o.gone) return; live++; this.nMark[k].style.left = prog(o.s); if (o.s > P.s) ahead++; if (!near || Math.abs(o.s - P.s) < Math.abs(near.s - P.s)) near = o; });
+      h.pos.textContent = !live ? 'EGYEDÜL' : live > 1 ? `${ahead + 1}. HELY / ${live + 1}` : ahead ? 'ÜLDÖZÖL' : 'VEZETSZ'; h.pos.className = 'pos ' + (ahead ? 'chase' : 'lead');
+      if (near) { const gap = P.s - near.s, sec = Math.abs(gap) / Math.max(5, gap >= 0 ? near.v : P.speed), gm = Math.round(gap); h.gap.textContent = `${gm > 0 ? '+' : gm < 0 ? '−' : ''}${Math.abs(gm)} m · ${sec.toFixed(1)} s`; } else h.gap.textContent = '';
+    } else if (R) {
       h.rv.style.left = prog(R.s);
       const gap = P.s - R.s;
       h.pos.textContent = gap >= 0 ? 'VEZETSZ' : 'ÜLDÖZÖL'; h.pos.className = 'pos ' + (gap >= 0 ? 'lead' : 'chase');

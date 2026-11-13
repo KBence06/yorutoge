@@ -6,8 +6,8 @@ const LOC = { intake: 'bay', header: 'bay', cam: 'bay', turbo: 'bay', ic: 'bay',
   susp: 'wheel', pads: 'wheel', brakes: 'wheel', tires: 'wheel', wheels: 'wheel',
   ecu: 'cabin', pump: 'cabin', hbrake: 'cabin', cage: 'cabin', seat: 'cabin', interior: 'cabin', hood: 'out', wing: 'out', kit: 'out', decal: 'out',
   flares: 'out', lights: 'bay', tail: 'out', tint: 'cabin', banner: 'out', neon: 'under',
-  bumper: 'out', canards: 'out', diffuser: 'under', roof: 'out', louver: 'out', mirrors: 'out', pipes: 'under', pod: 'out', towhook: 'out', oilcooler: 'bay', tirelet: 'wheel', intneon: 'cabin' };
-const ADDITIVE = new Set(['wing', 'kit', 'cage', 'strut', 'decal', 'boost', 'flares', 'tint', 'banner', 'neon', 'canards', 'diffuser', 'roof', 'louver', 'pod', 'towhook', 'oilcooler', 'tirelet', 'intneon']);
+  bumper: 'out', canards: 'out', diffuser: 'under', roof: 'out', louver: 'out', mirrors: 'out', pipes: 'under', pod: 'out', towhook: 'out', oilcooler: 'bay', tirelet: 'wheel', intneon: 'cabin', nos: 'cabin', charm: 'out' };
+const ADDITIVE = new Set(['wing', 'kit', 'cage', 'strut', 'decal', 'boost', 'flares', 'tint', 'banner', 'neon', 'canards', 'diffuser', 'roof', 'louver', 'pod', 'towhook', 'oilcooler', 'tirelet', 'intneon', 'nos', 'charm']);
 
 const ArtCache = {
   m: new Map(),
