@@ -10,7 +10,7 @@ const Walk = {
     try { renderer = new THREE.WebGLRenderer({ antialias: set.gfx !== 'low', powerPreference: 'high-performance' }); }
     catch (e) { root.hidden = true; toast('Nem indult el a 3D-s nézet ezen az eszközön.', 'bad'); return false; }
     this.def = def; this.active = true; this.renderer = renderer;
-    renderer.setPixelRatio(set.gfx === 'low' ? 0.6 : Math.min(set.gfx === 'mid' ? 1.25 : 2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(set.gfx === 'low' ? 0.6 : Math.min(set.gfx === 'mid' ? 1.5 : 2, window.devicePixelRatio || 1));
     renderer.domElement.className = 'three'; root.append(renderer.domElement);
     renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); toast('Elfogyott a grafikus memória, visszaléptem.', 'bad'); this.close(); }, false);
     this.scene = new THREE.Scene(); this.cam = new THREE.PerspectiveCamera(68, 1, 0.06, 600); this.cam.rotation.order = 'YXZ';
@@ -41,7 +41,7 @@ const Walk = {
   collide(x0, x1, z0, z1) { this.cols.push({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }); },
   hotspot(x, y, z, r, label, act, show) { const s = { p: new THREE.Vector3(x, y, z), r, label, act, show }; this.spots.push(s); return s; },
   car(c, x, z, ry, opts) {
-    const o = Object.assign({ track: this.track, glow: this.glowTex(), renderer: this.renderer, cabin: S.settings.gfx !== 'low' }, opts || {});
+    const o = Object.assign({ track: this.track, glow: this.glowTex(), renderer: this.renderer, cabin: S.settings.gfx !== 'low', calm: true }, opts || {});
     const m = CarModel.build(c.model, c.paint, c.vis || carVisual(c), o); m.g.position.set(x, 0, z); m.g.rotation.y = ry || 0; this.scene.add(m.g); return m;
   },
   // ---- HUD and input
@@ -102,7 +102,9 @@ const Walk = {
     const dt = clamp((now - this.last) / 1000, 0, 0.05); this.last = now; this.t += dt;
     // keep it smooth on a slow phone by lowering the resolution
     const pf = this.pf; pf.ema += (dt * 1000 - pf.ema) * 0.08; pf.cool -= dt;
-    if (pf.cool <= 0 && pf.ema > 40 && this.renderer.getPixelRatio() > 0.5) { this.renderer.setPixelRatio(Math.max(0.5, this.renderer.getPixelRatio() * 0.82)); this.resize(); pf.cool = 1.5; }
+    const pr = this.renderer.getPixelRatio(), lo = Math.max(0.6, pf.pr * 0.6); // the first seconds are spent compiling shaders: do not judge by them
+    if (this.t > 3 && pf.cool <= 0 && pf.ema > 45 && pr > lo) { this.renderer.setPixelRatio(Math.max(lo, pr * 0.85)); this.resize(); pf.cool = 2; }
+    else if (this.t > 3 && pf.cool <= 0 && pf.ema < 22 && pr < pf.pr) { this.renderer.setPixelRatio(Math.min(pf.pr, pr * 1.1)); this.resize(); pf.cool = 2; }
     const cam = this.cam, C = this.cine;
     if (C) {
       const st = C.steps[C.i]; C.t += dt; const k = clamp(C.t / st.dur, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;

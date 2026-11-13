@@ -28,9 +28,9 @@ const GarageWalk = {
     const D = S.decor, lightHex = LIGHTS[D.light] || LIGHTS.l_cold, lc = new THREE.Color(lightHex), sc = W.scene, H = 3.3;
     const st = this.state = { hood: 0, hoodT: 0, lift: 0, wheelOff: 0, rpm: 0, blip: 0 };
     sc.background = new THREE.Color(0x06070a); sc.fog = new THREE.Fog(0x06070a, 16, 44);
-    sc.add(new THREE.HemisphereLight(lc.clone().lerp(new THREE.Color(0xffffff), 0.45), 0x241d16, 0.62)); sc.add(new THREE.AmbientLight(0x30343c, 0.5));
+    sc.add(new THREE.HemisphereLight(lc.clone().lerp(new THREE.Color(0xffffff), 0.45), 0x241d16, 0.42)); sc.add(new THREE.AmbientLight(0x30343c, 0.3));
     const tubeM = new THREE.MeshBasicMaterial({ color: lc.clone().lerp(new THREE.Color(0xffffff), 0.6) });
-    for (const z of [-1.9, 2.1]) { const pl = new THREE.PointLight(lightHex, 1.25, 17, 1.5); pl.position.set(0, 2.85, z); sc.add(pl); W.mesh(new THREE.BoxGeometry(1.9, 0.05, 0.13), tubeM, 0, H - 0.12, z); W.mesh(new THREE.BoxGeometry(2.05, 0.04, 0.22), new THREE.MeshLambertMaterial({ color: 0x2a2c30 }), 0, H - 0.07, z); }
+    for (const z of [-1.9, 2.1]) { const pl = new THREE.PointLight(lightHex, 0.8, 17, 1.5); pl.position.set(0, 2.85, z); sc.add(pl); W.mesh(new THREE.BoxGeometry(1.9, 0.05, 0.13), tubeM, 0, H - 0.12, z); W.mesh(new THREE.BoxGeometry(2.05, 0.04, 0.22), new THREE.MeshLambertMaterial({ color: 0x2a2c30 }), 0, H - 0.07, z); }
     // ---- the room: block walls, the floor you picked, the shutter
     const wallT = (rx, ry) => W.canvasTex(256, 256, (g) => {
       g.fillStyle = '#3a3d44'; g.fillRect(0, 0, 256, 256);
@@ -51,7 +51,7 @@ const GarageWalk = {
       else {
         g.fillStyle = D.floor === 'fl_epoxy' ? '#565b64' : '#4a4844'; g.fillRect(0, 0, 512, 512);
         for (let i = 0; i < (D.floor === 'fl_epoxy' ? 1500 : 6000); i++) { const v = 50 + Math.random() * 50; g.fillStyle = `rgba(${v},${v},${v},0.35)`; g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
-        if (D.floor !== 'fl_epoxy') { g.fillStyle = 'rgba(10,10,10,0.3)'; for (let i = 0; i < 9; i++) { g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 512, 20 + Math.random() * 50, 12 + Math.random() * 30, Math.random() * 3, 0, 7); g.fill(); } g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 2; g.strokeRect(0, 0, 512, 512); }
+        if (D.floor !== 'fl_epoxy') { g.fillStyle = 'rgba(10,10,10,0.1)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 512, 8 + Math.random() * 18, 6 + Math.random() * 12, Math.random() * 3, 0, 7); g.fill(); } g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 2; g.strokeRect(0, 0, 512, 512); }
       }
     }, D.floor === 'fl_checker' ? [3, 3.5] : [2, 2.4]);
     const fl = W.mesh(new THREE.PlaneGeometry(2 * X, Z1 - Z0), D.floor === 'fl_epoxy' ? new THREE.MeshPhongMaterial({ map: floorT, shininess: 70, specular: 0x555555 }) : new THREE.MeshLambertMaterial({ map: floorT }), 0, 0, (Z0 + Z1) / 2); fl.rotation.x = -Math.PI / 2;

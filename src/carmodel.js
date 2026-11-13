@@ -263,17 +263,17 @@ const CarModel = {
     const hoodZ = sh.cowlZ + 0.02, bootZ = (() => { const q = sh.up.filter(p => p[0] < sh.pillarZ && p[1] < sh.beltY + 0.03 && p[1] > sh.beltY - 0.12); return q.length ? Math.max(...q.map(p => p[0])) - 0.03 : -99; })();
     const bump = D.bumpers === 'dark' ? new THREE.Vector3(L / 2 - 0.3, 0.44 * sh.H - sh.drop, 0.485 * sh.H - sh.drop) : new THREE.Vector3(99, -9, -9);
     if (!ghost) shellM.onBeforeCompile = (shd) => {
-      shd.uniforms.uCol2 = { value: col2 }; shd.uniforms.uMode = { value: mode }; shd.uniforms.uBelt = { value: beltY }; shd.uniforms.uBump = { value: bump };
+      shd.uniforms.uCol2 = { value: col2 }; shd.uniforms.uMode = { value: mode }; shd.uniforms.uBelt = { value: beltY }; shd.uniforms.uBump = { value: bump }; shd.uniforms.uBumpLo = { value: 0.27 * sh.H - sh.drop };
       shd.uniforms.uSeams = { value: new THREE.Vector4(seams[0], seams[1], seams[2], seams[3]) }; shd.uniforms.uLids = { value: new THREE.Vector3(hoodZ, D.bed ? -99 : bootZ, sh.W * 0.5) };
       shd.vertexShader = 'varying vec3 vLP;\nvarying vec3 vLN;\n' + shd.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vLP = position; vLN = normal;');
-      shd.fragmentShader = 'uniform vec3 uLids;\nuniform vec3 uCol2;\nuniform float uMode;\nuniform float uBelt;\nuniform vec3 uBump;\nuniform vec4 uSeams;\nvarying vec3 vLP;\nvarying vec3 vLN;\n' + shd.fragmentShader.replace('#include <color_fragment>', [
+      shd.fragmentShader = 'uniform vec3 uLids;\nuniform vec3 uCol2;\nuniform float uMode;\nuniform float uBelt;\nuniform float uBumpLo;\nuniform vec3 uBump;\nuniform vec4 uSeams;\nvarying vec3 vLP;\nvarying vec3 vLN;\n' + shd.fragmentShader.replace('#include <color_fragment>', [
         '#include <color_fragment>',
         '{ float ax = abs(vLP.x); float m = 0.0; float side = smoothstep(0.45, 0.7, abs(vLN.x));',
         '  if (uMode > 0.5 && uMode < 1.5) m = step(vLP.y, uBelt - 0.3);',
         '  else if (uMode > 1.5 && uMode < 2.5) m = step(0.07, ax) * step(ax, 0.22) * step(0.3, vLN.y + abs(vLN.z));',
         '  else if (uMode > 2.5) m = (step(uBelt - 0.24, vLP.y) * step(vLP.y, uBelt - 0.17) + step(uBelt - 0.265, vLP.y) * step(vLP.y, uBelt - 0.247)) * side;',
         '  diffuseColor.rgb = mix(diffuseColor.rgb, uCol2, clamp(m, 0.0, 1.0));',
-        '  float plastic = max(step(uBump.x, abs(vLP.z)) * step(vLP.y, uBump.y), step(uBump.y + 0.02, vLP.y) * step(vLP.y, uBump.z) * side);',
+        '  float plastic = max(smoothstep(uBump.x - 0.004, uBump.x + 0.004, abs(vLP.z)) * (1.0 - smoothstep(uBump.y - 0.004, uBump.y + 0.004, vLP.y)) * smoothstep(uBumpLo - 0.004, uBumpLo + 0.004, vLP.y), smoothstep(uBump.y + 0.016, uBump.y + 0.024, vLP.y) * (1.0 - smoothstep(uBump.z - 0.004, uBump.z + 0.004, vLP.y)) * side);',
         '  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.035), plastic);',
         '  float seam = max(max(1.0 - smoothstep(0.003, 0.009, abs(vLP.z - uSeams.x)), 1.0 - smoothstep(0.003, 0.009, abs(vLP.z - uSeams.y))), max(1.0 - smoothstep(0.003, 0.009, abs(vLP.z - uSeams.z)), 1.0 - smoothstep(0.003, 0.009, abs(vLP.z - uSeams.w))));',
         '  seam *= side * step(0.27, vLP.y) * step(vLP.y, uBelt - 0.02);',
@@ -281,13 +281,13 @@ const CarModel = {
         '  float lid = max(1.0 - smoothstep(0.003, 0.008, abs(vLP.z - uLids.x)), 1.0 - smoothstep(0.003, 0.008, abs(vLP.z - uLids.y))) * step(ax, uLids.z * 0.86);',
         '  lid = max(lid, (1.0 - smoothstep(0.003, 0.008, abs(ax - uLids.z * 0.86))) * max(step(uLids.x, vLP.z), step(vLP.z, uLids.y)) * step(abs(vLP.z), uSeams.x + 5.0));',
         '  seam = max(seam, lid * topf * 0.9);',
-        '  float trim = side * step(uBelt - 0.012, vLP.y) * step(vLP.y, uBelt + 0.02);',
+        '  float trim = side * smoothstep(uBelt - 0.016, uBelt - 0.008, vLP.y) * (1.0 - smoothstep(uBelt + 0.016, uBelt + 0.024, vLP.y));',
         '  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.025), max(seam * 0.85, trim * 0.92));',
-        '  diffuseColor.rgb *= mix(0.55, 1.0, smoothstep(0.12, 0.4, vLP.y)); }'].join('\n'));
+        '  diffuseColor.rgb *= mix(0.55, 1.0, smoothstep(0.12, 0.4, vLP.y));', '  if (!gl_FrontFacing) diffuseColor.rgb = vec3(0.02); }'].join('\n'));
     };
     const glassM = mk(cheap ? new THREE.MeshPhongMaterial({ color: vis.tint ? 0x030406 : 0x0a0d14, specular: 0xaabbcc, shininess: 140, envMap: env, combine: THREE.AddOperation, reflectivity: 0.55 })
       : new THREE.MeshStandardMaterial({ color: vis.tint ? 0x020304 : 0x0a0f18, roughness: 0.04, metalness: 0.15, envMap: env, envMapIntensity: vis.tint ? 1.4 : 1.7, depthWrite: true }));
-    const seeIn = !cheap && !ghost && (opts.cabin || S.settings.gfx === 'high'); if (seeIn) { glassM.transparent = true; glassM.opacity = vis.tint ? 0.86 : 0.5; glassM.depthWrite = false; } if (seeIn) { shellM.side = THREE.DoubleSide; glassM.side = THREE.DoubleSide; }
+    const seeIn = !cheap && !ghost && (opts.cabin || S.settings.gfx === 'high'); if (seeIn) { glassM.transparent = true; glassM.opacity = vis.tint ? 0.93 : 0.74; glassM.depthWrite = false; } if (seeIn) { shellM.side = THREE.DoubleSide; glassM.side = THREE.DoubleSide; }
     const darkM = mk(new THREE.MeshLambertMaterial({ color: 0x0a0a0c }));
     const trimM = mk(std({ color: 0x141518, roughness: 0.45, metalness: 0.1, envMap: env, envMapIntensity: 0.6 }));
     const carbonM = mk(std({ color: 0x1c1d22, roughness: 0.25, metalness: 0.3, envMap: env, envMapIntensity: 1 }));
@@ -618,8 +618,9 @@ const CarModel = {
     if (glow && !ghost) {
       const hm = mk(new THREE.SpriteMaterial({ map: glow, color: lightColor, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.85 }));
       const tm = mk(new THREE.SpriteMaterial({ map: glow, color: 0xff2030, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.5 }));
-      for (const [x, y, z] of lightGlows) { const s = new THREE.Sprite(hm); s.position.set(x, y, z); s.scale.set(0.85, 0.85, 1); body.add(s); }
-      for (const [x, y, z] of tailGlows) { const s = new THREE.Sprite(tm); s.position.set(x, y, z); s.scale.set(0.5, 0.5, 1); body.add(s); tailSprites.push(s); }
+      const gs = opts.cabin && opts.bay !== undefined || opts.calm ? 0.5 : 1; if (gs < 1) { hm.opacity = 0.5; tm.opacity = 0.3; }
+      for (const [x, y, z] of lightGlows) { const s = new THREE.Sprite(hm); s.position.set(x, y, z); s.scale.set(0.85 * gs, 0.85 * gs, 1); body.add(s); }
+      for (const [x, y, z] of tailGlows) { const s = new THREE.Sprite(tm); s.position.set(x, y, z); s.scale.set(0.5 * gs, 0.5 * gs, 1); body.add(s); tailSprites.push(s); }
       tailSprites.mat = tm;
     }
     if (!ghost && vis.neon) {

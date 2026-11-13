@@ -99,8 +99,8 @@ function carShape(model, lower) {
     if (a[1] >= beltY) gh.push(a);
     if ((a[1] >= beltY) !== (b[1] >= beltY)) { const t = (beltY - a[1]) / (b[1] - a[1]); gh.push([a[0] + (b[0] - a[0]) * t, beltY]); }
   }
-  let glassAll = polyInset(gh, 0.065);
-  const pz = (D.pillar - 0.5) * L, pw = 0.075;
+  let glassAll = polyInset(gh, 0.08);
+  const pz = (D.pillar - 0.5) * L, pw = 0.1;
   const glass = [polyClip(glassAll, p => (pz - pw / 2) - p[0]), polyClip(glassAll, p => p[0] - (pz + pw / 2))].filter(g => g.length >= 3);
   const res = { M, D, L, W: M.width, H, drop, outline, up, underFrom, glass, wheels: { zr, zf, r, ra }, beltY, cowlZ: (D.cowl - 0.5) * L, pillarZ: pz, roofY: Math.max(...up.map(p => p[1])) };
   _shapeCache[key] = res;
