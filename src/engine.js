@@ -154,7 +154,7 @@ function carSpec(c) {
   const longMuR = 1 - 0.012 * Math.pow(Math.abs(camberR), 1.4);
   const sens = 0.2 * (cgH / 0.5) * (1.12 - 0.08 * springAvg);
   const L = M.wheelbase, a = L * (1 - M.frontW), b = L * M.frontW;
-  const stockLsd = { sprint16: 'open', types: 'open', s20t: 'visc', twinr: 'visc', gt4: 'visc', bambina: 'open', mizuchi: 'visc', kamui: 'visc', cresta: 'visc', arashi: 'visc', raijin: 'visc' }[c.model] || 'open';
+  const stockLsd = { sprint16: 'open', types: 'open', s20t: 'visc', twinr: 'visc', gt4: 'visc', bambina: 'open', mizuchi: 'visc', kamui: 'visc', cresta: 'visc', arashi: 'visc', raijin: 'visc', kagero: '1way', zetto: 'visc', hayate: '1.5way', stella: 'visc', sovereign: 'open' }[c.model] || 'open';
   const lsd = fx.lsd || stockLsd;
   const final = fx.finalKit ? t.final : M.final;
   const sp = stockPeakPS(c.model);

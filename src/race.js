@@ -6,6 +6,7 @@ const Race = {
     const ready = raceReadiness(c); if (ready) { toast(ready, 'bad'); return; }
     this.tg = tg; this.rv = rv; this.c = c; this.mode = mode || (rv ? 'battle' : 'practice'); this.dawn = this.mode === 'tofu';
     this.drift = this.mode === 'drift' || this.mode === 'video'; this.video = this.mode === 'video' ? (opts || { target: 3000, pay: 20000 }) : null; this.photo = null;
+    this.zero = !!tg.drag; this.net = this.mode === 'net' ? opts : null; this.opts = opts; this.zr = null;
     const root = $('#race'); root.hidden = false; root.className = S.settings.gfx === 'low' ? 'lowres' : '';
     root.replaceChildren(el('div', { class: 'intro' }, el('div', { class: 'card' }, el('div', { class: 'jp' }, tg.jp), el('div', { class: 'vs' }, 'A hegy betöltése…'))));
     this.active = true;
@@ -20,19 +21,25 @@ const Race = {
     const tg = this.tg, rv = this.rv, root = $('#race');
     const card = el('div', { class: 'card' },
       el('div', { class: 'jp' }, tg.jp),
-      el('div', { class: 'vs' }, this.dawn ? [el('span', null, 'Tofuszállítás '), el('em', null, '豆腐')] : this.video ? [el('span', null, 'Forgatás '), el('em', null, '撮影')] : this.drift ? [el('span', null, 'Drift edzés '), el('em', null, 'ドリフト')] : rv ? [el('span', null, 'Te '), el('em', null, 'vs'), el('span', null, ` ${rv.name}`)] : 'Időmérő edzés'),
-      el('div', { class: 'eyebrow' }, `${tg.name} · ${dirName(tg)} · ${((this.T.finish - this.T.start) / 1000).toFixed(2)} km`),
-      el('div', { class: 'row', style: 'justify-content:center;gap:8px' }, weatherBadge(this.wk), !this.dawn && policeChance() > 0.05 ? el('span', { class: 'tag ' + (policeChance() > 0.3 ? 'bad' : 'warn') }, `Rendőr: ${heatLabel(S.heat || 0)}`) : null),
+      el('div', { class: 'vs' }, this.dawn ? [el('span', null, 'Tofuszállítás '), el('em', null, '豆腐')] : this.video ? [el('span', null, 'Forgatás '), el('em', null, '撮影')] : this.drift ? [el('span', null, 'Drift edzés '), el('em', null, 'ドリフト')] : rv ? [el('span', null, 'Te '), el('em', null, 'vs'), el('span', null, ` ${rv.name}`)] : this.zero ? [el('span', null, 'Zero-yon '), el('em', null, '400 m')] : [el('span', null, 'Time attack '), el('em', null, 'タイムアタック')]),
+      el('div', { class: 'eyebrow' }, this.zero ? `${tg.name} · állórajt · 402 m` : `${tg.name} · ${dirName(tg)} · ${((this.T.finish - this.T.start) / 1000).toFixed(2)} km`),
+      el('div', { class: 'row', style: 'justify-content:center;gap:8px' }, weatherBadge(this.wk), this.net ? el('span', { class: 'tag ok' }, 'Online · tét nélkül') : null, !this.dawn && !this.zero && !this.net && policeChance() > 0.05 ? el('span', { class: 'tag ' + (policeChance() > 0.3 ? 'bad' : 'warn') }, `Rendőr: ${heatLabel(S.heat || 0)}`) : null),
       this.wk !== 'clear' ? el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, `${WEATHER[this.wk].desc} Tapadás a gumijaiddal: ${Math.round(wetGrip(this.c, this.wk) * 100)}%.`) : null,
       this.dawn ? el('div', { class: 'line' }, `Hajnali fél öt. A Fujimura tofubolt rendelése a hegy ${tg.dir === 'down' ? 'aljára' : 'tetejére'} megy. Egy pohár víz áll a műszerfalon: ha kiloccsan, kevesebbet fizetnek. Ha a szalagkorlátnak mész, összetörik a tofu.`)
-      : rv ? el('div', { class: 'line' }, `„${rv.line}” · ${CARS[rv.car].name}${rv.meet ? ` · tét ${fmtY(rv.prize)}` : ''}`) : this.drift ? this.driftIntro() : el('div', { class: 'line' }, S.best[trackKey(tg)] ? `Legjobb időd: ${fmtTime(S.best[trackKey(tg)])}` : 'Egyedül a hegyen. Tanuld meg a kanyarokat.'),
+      : this.net ? el('div', { class: 'line' }, `${rv.name} · ${CARS[rv.car].name}. Mindketten a saját képernyőtökön vezettek, a másik autója nem ütközik veled.`) : rv ? el('div', { class: 'line' }, `„${rv.line}” · ${CARS[rv.car].name}${rv.meet ? ` · tét ${fmtY(rv.prize)}` : ''}`) : this.drift ? this.driftIntro() : this.zero ? el('div', { class: 'line' }, `Négyszáz méter állórajtból. Visszaszámlálás alatt tartsd a gázt, hogy fordulaton induljon; kézi váltóval te döntöd el, mikor váltasz.${S.best.wangan ? ` Legjobb időd: ${S.best.wangan.toFixed(2)} s.` : ''}`) : this.taIntro(),
       this.drift ? null : el('div', { class: 'muted', style: 'font-size:13px;max-width:52ch' }, 'Bal hüvelykujj: húzd balra-jobbra a kormányzáshoz. Jobb oldalt gáz, fék, kézifék. Billentyűzeten nyilak, szóköz a kézifék, Q/E váltás.'),
       el('div', { class: 'row', style: 'justify-content:center' },
-        el('button', { class: 'btn primary', style: 'min-width:160px;font-size:17px', onclick: () => this.go() }, 'Indulás'),
-        el('button', { class: 'btn ghost', onclick: () => this.teardown() }, 'Mégse')));
+        el('button', { class: 'btn primary', id: 'rGo', style: 'min-width:160px;font-size:17px', onclick: () => this.net ? this.net.ready(this) : this.go() }, this.net ? 'Kész vagyok' : 'Indulás'),
+        el('button', { class: 'btn ghost', onclick: () => { if (this.net) this.net.quit(this); this.teardown(); } }, 'Mégse')));
     this.introEl = el('div', { class: 'intro' }, card);
     root.append(this.introEl);
     this.renderOnce();
+  },
+  taIntro() {
+    const tk = trackKey(this.tg), tt = TA_TIMES[tk], best = S.best[tk], got = (S.medals || {})[tk];
+    return el('div', { style: 'display:flex;flex-direction:column;gap:6px;align-items:center' },
+      el('div', { class: 'line' }, best ? `Legjobb időd: ${fmtTime(best)}. A szellemautó ezt a kört futja.` : 'Egyedül a hegyen, stopperre. A legjobb köröd szellemautóként veled jön.'),
+      tt ? el('div', { class: 'medals' }, ...TA_ORDER.map((m, i) => el('span', { class: 'medal m-' + m + (got && TA_ORDER.indexOf(got) >= i ? ' got' : '') }, el('b', null, TA_NAME[m]), fmtTime(tt[i]), el('small', null, got && TA_ORDER.indexOf(got) >= i ? 'megvan' : fmtY(TA_PRIZE[m]))))) : null);
   },
   driftIntro() {
     const tk = trackKey(this.tg), best = (S.driftBest || {})[tk], ff = CARS[this.c.model].layout === 'FF', V = this.video;
@@ -58,6 +65,7 @@ const Race = {
     this.buildHud();
     Audio2.startEngine(this.P.sp); Audio2.rain(this.W.rain ? 1 : this.wk === 'damp' ? 0.15 : 0);
     this.phase = 'count'; this.count = 3.6; this.lastBeep = 4; this.time = 0;
+    if (this.zero) this.zr = { react: null, t100: null, et: null, trap: 0, shifts: 0 };
     this.last = performance.now(); this.acc = 0;
     const loop = (t) => { if (!this.active) return; this.raf = requestAnimationFrame(loop); this.frame(t); };
     this.raf = requestAnimationFrame(loop);
@@ -66,12 +74,12 @@ const Race = {
   // ---------------------------------------------------------------- scene
   build() {
     const tg = this.tg, rv = this.rv, set = this.set = this.drift ? driftSet() : S.settings;
-    const T = this.T = buildTrack(tg);
-    const wk = this.wk = this.forceWeather || weatherNow(), W = this.W = WEATHER[wk];
+    const T = this.T = buildTrack(tg); if (tg.drag) T.finish = T.start + 402.34;
+    const wk = this.wk = (this.net && this.net.wk) || this.forceWeather || weatherNow(), W = this.W = WEATHER[wk];
     const sp = carSpec(this.c), wg = wetGrip(this.c, wk); sp.muF *= wg; sp.muR *= wg;
     this.P = new PlayerCar(sp, T, T.start, rv ? -1.75 : 0, set);
     this.aid = buildAidProfile(T, sp);
-    this.R = rv ? new RivalCar(rv, T, T.start, 1.75, rivalWetGrip(wk) * (tg.rev ? 0.985 : 1)) : null;
+    this.R = this.net ? new NetCar(T, T.start, 1.75) : rv ? new RivalCar(rv, T, T.start, 1.75, rivalWetGrip(wk) * (tg.rev ? 0.985 : 1)) : null;
     const root = $('#race');
     const renderer = this.renderer = new THREE.WebGLRenderer({ antialias: set.gfx === 'high', powerPreference: 'high-performance' });
     const dpr = window.devicePixelRatio || 1;
@@ -92,7 +100,7 @@ const Race = {
     const moon = new THREE.DirectionalLight(0x9fb4e8, 0.28); moon.position.set(-300, 500, 200); scene.add(moon);
     this.disposables = [];
     this.corners = findCorners(T);
-    this.buildRoad(); this.buildTerrain(); this.buildRails(); this.buildLamps(); this.buildSky(); this.buildBanners(); this.buildSigns();
+    this.buildRoad(); if (this.zero) this.buildHarbor(); else this.buildTerrain(); this.buildRails(); this.buildLamps(); this.buildSky(); this.buildBanners(); this.buildSigns();
     if (murky) { this.stars.material.opacity = 0; this.moon.visible = false; }
     const pv = carVisual(this.c);
     this.pMesh = this.buildCar(this.c.model, this.c.paint, pv, true, { plate: ['黒沢 330', '19-07'], turbo: !!this.c.parts.turbo, bbk: !!this.c.parts.brakes });
@@ -100,10 +108,10 @@ const Race = {
     // ghost of the best practice run
     this.rec = []; this.recT = 0; this.ghost = null; this.gMesh = null;
     const gk = trackKey(tg);
-    if (this.mode === 'practice' && S.ghosts && S.ghosts[gk] && CARS[S.ghosts[gk].model]) { this.ghost = S.ghosts[gk]; this.gMesh = this.buildCar(this.ghost.model, '#9fd4ff', {}, false, { ghost: true }); }
+    if (this.mode === 'practice' && !this.zero && S.ghosts && S.ghosts[gk] && CARS[S.ghosts[gk].model]) { this.ghost = S.ghosts[gk]; this.gMesh = this.buildCar(this.ghost.model, '#9fd4ff', {}, false, { ghost: true }); }
     // a patrol car may be waiting in a lay-by
     this.police = null; this.pol = null;
-    if (this.mode !== 'tofu' && this.mode !== 'video' && (this.forcePolice || Math.random() < policeChance())) {
+    if (this.mode !== 'tofu' && this.mode !== 'video' && !this.zero && !this.net && (this.forcePolice || Math.random() < policeChance())) {
       const L = T.finish - T.start; let ps = T.start + L * (0.25 + Math.random() * 0.3);
       for (let tries = 0; tries < 60; tries++) {
         let ok = true; for (let j = -20; j <= 30; j += 2) if (Math.abs(T.k[clamp(Math.floor(ps + j), 0, T.N - 1)]) > 1 / 150) { ok = false; break; }
@@ -269,6 +277,27 @@ const Race = {
     }
     trees.count = placed; this.scene.add(trees); this.disposables.push(trees);
   },
+  // the harbour straight: flat ground, stacked containers, cranes against the sky, sodium light everywhere
+  buildHarbor() {
+    const T = this.T; this.minY = 0; this.terrH = null; this.nearRoad = null;
+    const mid = trackPoint(T, T.start + 300), gg = new THREE.PlaneGeometry(1600, 2400); gg.rotateX(-Math.PI / 2);
+    const gm = this.track(gg, new THREE.MeshLambertMaterial({ color: 0x15171b })); gm.position.set(mid.x, -0.02, mid.z); this.scene.add(gm);
+    let r = 4242; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+    const cols = [0x8a2a22, 0x1f4f8a, 0x2f6b3a, 0xb07a1a, 0x5a5e66, 0x7a3a6a], list = [];
+    for (let s = T.start - 60; s < T.N - 10; s += 13) for (const side of [-1, 1]) { if (rnd() < 0.25) continue; const n = 1 + Math.floor(rnd() * 3), off = RAIL + 9 + rnd() * 16; for (let k = 0; k < n; k++) list.push({ s, side, off, y: k * 2.6 + 1.3, c: cols[Math.floor(rnd() * cols.length)], j: (rnd() - 0.5) * 0.5 }); }
+    const bg = new THREE.BoxGeometry(2.44, 2.6, 12.2), bm = new THREE.MeshLambertMaterial({ color: 0xffffff }); this.disposables.push(bg, bm);
+    const boxes = new THREE.InstancedMesh(bg, bm, list.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
+    list.forEach((b, i) => { const p = trackPoint(T, b.s), x = p.x + Math.cos(p.h) * b.off * b.side, z = p.z - Math.sin(p.h) * b.off * b.side; q.setFromEuler(e.set(0, p.h + b.j * 0.1, 0)); v.set(x, b.y, z); m4.compose(v, q, one); boxes.setMatrixAt(i, m4); boxes.setColorAt(i, col.setHex(b.c).multiplyScalar(0.55)); });
+    this.scene.add(boxes); this.disposables.push(boxes);
+    // gantry cranes far off, each with a red warning light
+    const cm = new THREE.MeshBasicMaterial({ color: 0x0c0e14, fog: false }), lp = [];
+    for (let i = 0; i < 6; i++) { const p = trackPoint(T, T.start + 80 + i * 150), side = i % 2 ? 1 : -1, off = 150 + rnd() * 120, x = p.x + off * side, z = p.z + (rnd() - 0.5) * 80;
+      for (const dx of [-14, 14]) { const lg = new THREE.BoxGeometry(3, 62, 3); const leg = this.track(lg, cm); leg.position.set(x + dx, 31, z); this.scene.add(leg); }
+      const bgm = new THREE.BoxGeometry(96, 5, 5), boom = this.track(bgm, cm); boom.position.set(x - side * 22, 62, z); this.scene.add(boom); lp.push(x - side * 68, 66, z, x, 66, z); }
+    const lg2 = new THREE.BufferGeometry(); lg2.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3)); const lm2 = new THREE.PointsMaterial({ color: 0xff3020, size: 5, sizeAttenuation: false, fog: false }); this.disposables.push(lg2, lm2); this.scene.add(new THREE.Points(lg2, lm2));
+    // painted lane boxes and distance boards
+    for (const [d, txt] of [[100, '100'], [200, '200'], [300, '300']]) { const p = trackPoint(T, T.start + d), g2 = new THREE.PlaneGeometry(ROAD_HW * 2, 0.25), m = this.track(g2, new THREE.MeshBasicMaterial({ color: 0x8a8678 })); m.rotation.order = 'YXZ'; m.rotation.y = p.h; m.rotation.x = -Math.PI / 2; m.position.set(p.x, p.y + 0.04, p.z); this.scene.add(m); }
+  },
   buildRails() {
     const T = this.T, step = 2;
     for (const side of [-1, 1]) {
@@ -308,7 +337,7 @@ const Race = {
     const T = this.T; this.lamps = [];
     const poleG = new THREE.CylinderGeometry(0.09, 0.12, 7.2, 6); poleG.translate(0, 3.6, 0);
     const poleM = new THREE.MeshLambertMaterial({ color: 0x5a5e66 }); this.disposables.push(poleG, poleM);
-    const spots = []; for (let s = T.start - 40; s < T.finish + 40; s += 85) spots.push(s);
+    const spots = []; for (let s = T.start - 40; s < T.finish + (this.zero ? 420 : 40); s += this.zero ? 45 : 85) spots.push(s);
     const poles = new THREE.InstancedMesh(poleG, poleM, spots.length); const m4 = new THREE.Matrix4();
     const glowPos = [], poolPos = [], poolUv = [], poolIdx = [];
     spots.forEach((s, n) => {
@@ -438,6 +467,12 @@ const Race = {
       this.polLight.intensity = on ? 1.6 + Math.sin(Q.flash * 15) * 0.8 : 0;
     }
   },
+  // on the strip the car holds its lane unless you steer hard yourself
+  laneSteer(steer) {
+    const P = this.P, T = this.T, i = clamp(Math.floor(P.s), 0, T.N - 1), lane = this.rv || this.net ? -1.75 : 0;
+    const fix = clamp((lane - P.lat) * 0.22 - angDiff(P.h, T.h[i]) * 1.6, -0.5, 0.5);
+    return clamp(steer * 0.5 + fix, -1, 1);
+  },
   ghostAt(t) {
     const a = this.ghost.pts, n = a.length / 5; if (n < 2) return null;
     const f = clamp(t / 0.1, 0, n - 1.001), i = Math.floor(f), u = f - i, o = i * 5;
@@ -494,7 +529,7 @@ const Race = {
     this.inp = { steer: 0, gas: 0, brake: 0, hand: false, kSteer: 0, bSteer: 0, bDir: { l: false, r: false }, keys: {} };
     const st = S.settings, sens = st.sens || 1;
     const hud = el('div', { class: 'hud' },
-      el('div', { class: 'hud-tl' }, el('div', { class: 'pos', id: 'hPos' }, this.dawn ? 'TOFU' : this.video ? 'FORGATÁS' : this.drift ? 'DRIFT' : rv ? '' : 'EDZÉS'), el('div', { class: 'gap', id: 'hGap' }), el('div', { class: 'prog' }, el('i', { class: 'me', id: 'hProgMe' }), rv ? el('i', { class: 'rv', id: 'hProgRv' }) : null),
+      el('div', { class: 'hud-tl' }, el('div', { class: 'pos', id: 'hPos' }, this.dawn ? 'TOFU' : this.video ? 'FORGATÁS' : this.drift ? 'DRIFT' : rv ? '' : this.zero ? '0–400 M' : 'TIME ATTACK'), el('div', { class: 'gap', id: 'hGap' }), el('div', { class: 'prog' }, el('i', { class: 'me', id: 'hProgMe' }), rv ? el('i', { class: 'rv', id: 'hProgRv' }) : null),
         this.police ? el('div', { class: 'cop', id: 'hCop', hidden: true }, el('b', null, '警察'), el('span', { id: 'hCopTxt' }, 'RENDŐR'), el('i', null, el('u', { id: 'hCopBar' }))) : null,
         this.wk !== 'clear' ? el('div', { class: 'hud-wx' }, weatherBadge(this.wk, true)) : null),
       this.police ? el('div', { class: 'cop-say', id: 'hCopSay', hidden: true }, el('b', null, '前の車、止まりなさい！'), el('small', null, '„Az előttem haladó autó, álljon meg!”')) : null,
@@ -621,12 +656,13 @@ const Race = {
     while (this.acc >= H) {
       this.acc -= H;
       if (this.phase === 'count') { P.step(H, { steer: inp.steer * 0.2, gas: inp.gas, brake: 1, hand: false }); P.vx = P.vz = 0; P.w = 0; continue; }
-      if (this.phase === 'done') { P.step(H, { steer: 0, gas: 0, brake: 0.6, hand: false }); if (R) R.step(H, P, 0.7); continue; }
+      if (this.phase === 'done') { P.step(H, { steer: this.zero ? this.laneSteer(0) : 0, gas: 0, brake: this.zero ? 0.85 : 0.6, hand: false }); if (R) R.step(H, P, 0.7); continue; }
+      if (this.zero) inp.steer = this.laneSteer(inp.steer);
       P.step(H, applyAids(P, T, this.aid, inp, this.set));
       if (R) {
         const gap = R.s - P.s, band = gap > 150 ? 0.95 : gap > 70 ? 0.975 : 1; // no catch-up boost when the rival is behind
         R.step(H, P, band);
-        const hit = carContact(P, R); if (hit > 1.5) Audio2.impact(hit);
+        if (!this.net) { const hit = carContact(P, R); if (hit > 1.5) Audio2.impact(hit); }
       }
       if (this.police) { this.police.update(H, P); const hit = carContact(P, this.police); if (hit > 1.5) Audio2.impact(hit); }
       this.time += H;
@@ -636,15 +672,17 @@ const Race = {
     if (this.dr && this.phase === 'race') this.driftStep(dt);
     if (this.cup && this.phase === 'race') { this.cup.step(dt, P.ay, P.ax, impact); if (this.cup.lastSpill > 0.0004 && !this.splashT) { this.splashT = 0.5; } }
     if (this.splashT) this.splashT = Math.max(0, this.splashT - dt);
+    if (this.zr && this.phase === 'race') { const z = this.zr, d = P.s - T.start; if (z.react == null && (d > 0.3 || P.speed > 1)) z.react = this.time; if (z.t100 == null && P.speed >= 27.78) z.t100 = this.time; z.trap = Math.max(z.trap, P.speed); }
+    if (this.net) this.net.tick(this, dt);
     if (this.phase === 'race') while (this.time >= this.recT) { this.rec.push(+P.x.toFixed(2), +P.y.toFixed(2), +P.z.toFixed(2), +P.h.toFixed(3), +P.s.toFixed(1)); this.recT += 0.1; }
     this.syncGhost();
     // finish conditions
     if (this.phase === 'race') {
-      if (P.s >= T.finish) this.finish(R && R.s >= T.finish ? 'lose' : 'win');
-      else if (R && R.s >= T.finish) this.finish('lose');
+      if (P.s >= T.finish) { if (this.zr) this.zr.et = this.time; this.finish(this.net ? (this.net.finT != null && this.net.finT < this.time ? 'lose' : 'win') : R && R.s >= T.finish ? 'lose' : 'win'); }
+      else if (this.net ? this.net.finT != null : R && R.s >= T.finish && !this.zero) this.finish('lose');
       else if (P.blown || P.dmgEngine >= 1) this.finish('blown');
       else if (this.c.cond.body - P.dmgBody <= 0) this.finish('wreck');
-      else if (R && R.s - P.s > 420) this.finish('gone');
+      else if (R && !this.net && !this.zero && R.s - P.s > 420) this.finish('gone');
       else if (this.police && this.police.bust >= 1) this.finish('busted');
     }
     // storm: distant lightning, thunder a few seconds later
@@ -761,12 +799,14 @@ const Race = {
     this.phase = 'done'; this.result = result;
     if (this.dawn && result === 'win') { this.countEl.textContent = 'LESZÁLLÍTVA'; setTimeout(() => this.results(), 1800); this.phase = 'done'; this.result = result; return; }
     const msg = { win: 'GYŐZELEM', lose: 'VERESÉG', gone: 'ELHÚZOTT', blown: 'MOTORHIBA', wreck: 'TÖRÉS', forfeit: 'FELADTAD', quit: 'KILÉPTÉL', busted: 'LEKAPCSOLTAK' }[result];
-    if (result === 'win' && !this.rv) this.countEl.textContent = 'CÉL';
+    if (this.net) this.net.finished(this, result);
+    if (result === 'win' && !this.rv) this.countEl.textContent = this.zr && this.zr.et ? this.zr.et.toFixed(2) + ' s' : 'CÉL';
     else this.countEl.textContent = msg;
     setTimeout(() => this.results(), result === 'quit' || result === 'forfeit' ? 50 : 1800);
   },
   results() {
     const P = this.P, c = this.c, rv = this.rv, tg = this.tg, res = this.result;
+    if (this.net) { const net = this.net, t = this.time; this.teardown(); net.results(res, t); return; }
     const lines = [];
     const before = { ...c.cond };
     c.cond.body = Math.max(0, c.cond.body - P.dmgBody);
@@ -783,25 +823,40 @@ const Race = {
     if (W.bonus > 1 && tofuInfo && tofuInfo.pay > 0) { const extra = Math.round(tofuInfo.pay * (W.bonus - 1) / 100) * 100; money += extra; lines.push(`${W.short} miatt pótlék: +${fmtY(extra)}.`); }
     let driftInfo = null;
     if (this.drift) driftInfo = this.driftResults(res, lines, W, tk, (m, r) => { money += m; rep += r; });
-    if (this.mode === 'practice' && res === 'win') {
+    if (this.zr) { // the strip: the slip with the numbers
+      const z = this.zr;
+      if (z.et) {
+        lines.push(`400 m: ${z.et.toFixed(2)} s · ${Math.round(z.trap * 3.6)} km/h a célnál${z.t100 ? ` · 0–100: ${z.t100.toFixed(1)} s` : ''}${z.react != null ? ` · reakció: ${z.react.toFixed(2)} s` : ''}.`);
+        if (!S.best.wangan || z.et < S.best.wangan) { S.best.wangan = z.et; lines.push('Ez az eddigi legjobb időd az egyenesen.'); S.stats.dragPB = (S.stats.dragPB || 0) + 1; }
+      }
+      if (rv && this.R && res !== 'win' && z.et == null) lines.push('Ő ért át előbb a vonalon.');
+    }
+    if (this.mode === 'practice' && res === 'win' && !this.zr) {
       const t = this.time; const best = S.best[tk];
+      const tt = TA_TIMES[tk]; S.medals = S.medals || {};
+      if (tt && this.wk === 'clear' || tt && t <= tt[0]) { // medals: each one pays once
+        let got = -1; for (let i = 0; i < 4; i++) if (t <= tt[i]) got = i;
+        const had = S.medals[tk] ? TA_ORDER.indexOf(S.medals[tk]) : -1;
+        if (got > had) { let pay = 0; for (let i = had + 1; i <= got; i++) pay += TA_PRIZE[TA_ORDER[i]]; money += pay; rep += (got - had) * 4; S.medals[tk] = TA_ORDER[got]; lines.push(`${TA_NAME[TA_ORDER[got]]} érem a ${tg.name} időmérőjén: +${fmtY(pay)}.`); addNews(`${TA_NAME[TA_ORDER[got]]} érmes kört futottál a ${tg.name}n (${fmtTime(t)}).`); }
+        else if (got < 3) lines.push(`A következő éremhez ${fmtTime(tt[Math.max(got, had) + 1] != null ? tt[Math.max(got, had) + 1] : tt[3])} kell.`);
+      }
       if (!best || t < best) { S.best[tk] = t; S.ghosts = S.ghosts || {}; S.ghosts[tk] = { model: c.model, t, pts: this.rec }; lines.push(`Új legjobb idő (${dirName(tg)}${this.wk !== 'clear' ? ', ' + W.short.toLowerCase() : ''}): ${fmtTime(t)}. A következő edzésen ez lesz a szellemautó.`); } else lines.push(`Idő: ${fmtTime(t)} · legjobb ${fmtTime(best)}`);
     }
     if (rv && rv.meet) {
-      const ms = Meet.state();
+      const ms = Meet.state(), dk = rv.dragRun ? rv.id + '_d' : rv.id;
       if (res === 'busted') lines.push('A tét elmaradt: a villogó láttán mindenki szétszéledt.');
-      else if (res === 'win') { money += rv.prize; rep += rv.rep; ms.done[rv.id] = 'win'; S.stats.meetWins = (S.stats.meetWins || 0) + 1; lines.push(`${rv.name} kifizette a tétet: ${fmtY(rv.prize)}.`); addNews(`A gyülekezőn megverted ${rv.name}-t. A parkolóban erről beszélnek.`); }
-      else { money -= rv.prize; rep -= 1; ms.done[rv.id] = 'lose'; lines.push(`Kifizetted a tétet ${rv.name}-nak: ${fmtY(rv.prize)}.`); }
+      else if (res === 'win') { money += rv.prize; rep += rv.rep; ms.done[dk] = 'win'; S.stats.meetWins = (S.stats.meetWins || 0) + 1; lines.push(`${rv.name} kifizette a tétet: ${fmtY(rv.prize)}.`); addNews(`A gyülekezőn megverted ${rv.name}-t. A parkolóban erről beszélnek.`); }
+      else { money -= rv.prize; rep -= 1; ms.done[dk] = 'lose'; lines.push(`Kifizetted a tétet ${rv.name}-nak: ${fmtY(rv.prize)}.`); }
     } else if (rv && res !== 'busted') {
       const wkey = winKey(rv, tg);
       if (res === 'win') {
-        const first = !S.wins[wkey], f = tg.rev ? 0.6 : 1;
+        const first = !S.wins[wkey], f = tg.rev ? 0.6 : 1; if (this.zero) S.stats.dragWins = (S.stats.dragWins || 0) + 1;
         money += first ? Math.round(rv.prize * f * W.bonus / 1000) * 1000 : Math.round(rv.prize * 0.3); rep += first ? Math.round(rv.rep * f * W.bonus) : 2;
         S.wins[wkey] = true;
         if (first && rv.id === 'tengu') { lines.push('Legyőzted a hegy szellemét. A NIGHT PASS jövő havi címlapján a te kocsid lesz.'); S.stats.tengu = true; }
         if (first && W.bonus > 1) lines.push(`${W.name}: a tét és a hírnév ${Math.round((W.bonus - 1) * 100)}%-kal több.`);
-        addNews(first ? `Legyőzted ${rv.name}-t a ${tg.name}n (${dirName(tg)}${this.wk === 'rain' ? ', esőben' : this.wk === 'fog' ? ', ködben' : ''}). Beszélnek rólad.` : `Visszavágó ${rv.name} ellen: megint a tiéd.`);
-      } else { rep -= 2; addNews(`${rv.name} megvert a ${tg.name}n.`); }
+        addNews(this.zero ? (first ? `${rv.name} mögötted ért át a kikötői egyenesen. A Midnight Loop megjegyezte a rendszámodat.` : `Megint elverted ${rv.name}-t az egyenesen.`) : first ? `Legyőzted ${rv.name}-t a ${tg.name}n (${dirName(tg)}${this.wk === 'rain' ? ', esőben' : this.wk === 'fog' ? ', ködben' : ''}). Beszélnek rólad.` : `Visszavágó ${rv.name} ellen: megint a tiéd.`);
+      } else { rep -= this.zero ? 1 : 2; addNews(this.zero ? `${rv.name} elhúzott melletted az egyenesen.` : `${rv.name} megvert a ${tg.name}n.`); }
     }
     // the police
     if (res === 'busted') {
@@ -825,8 +880,8 @@ const Race = {
     save();
     this.teardown();
     UI.show(this.dawn || this.video ? 'work' : 'touge');
-    UI.open([UI.head(title, `${tg.name} · ${dirName(tg)}${rv ? ' · ' + rv.name : ''}`),
-      el('div', { class: 'res-big ' + (res === 'win' ? 'win' : 'lose') }, driftInfo && res === 'win' ? driftInfo.gr : this.dawn ? (tofuInfo && tofuInfo.pay > 0 ? fmtY(tofuInfo.pay) : '—') : res === 'busted' ? '捕' : rv ? (res === 'win' ? '勝' : '負') : fmtTime(this.time)),
+    UI.open([UI.head(title, this.zero ? `${tg.name} · 402 m${rv ? ' · ' + rv.name : ''}` : `${tg.name} · ${dirName(tg)}${rv ? ' · ' + rv.name : ''}`),
+      el('div', { class: 'res-big ' + (res === 'win' ? 'win' : 'lose') }, driftInfo && res === 'win' ? driftInfo.gr : this.dawn ? (tofuInfo && tofuInfo.pay > 0 ? fmtY(tofuInfo.pay) : '—') : res === 'busted' ? '捕' : this.zr && this.zr.et ? this.zr.et.toFixed(2) : rv ? (res === 'win' ? '勝' : '負') : fmtTime(this.time)),
       why ? el('p', { style: 'margin:0' }, why) : null,
       ...lines.map(l => el('p', { style: 'margin:0' }, l)),
       el('div', { class: 'specs' },

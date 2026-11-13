@@ -50,6 +50,7 @@ function sanitize(s) {
     c.parts = c.parts || {};
   }
   // v9: the beginner preset no longer brakes for you
+  if (s.settings.instAnim === undefined) s.settings.instAnim = true;
   if (!s.settings.mig9) { if (s.settings.aid === 'kezdo') s.settings.brakeAid = false; s.settings.mig9 = true; }
   if (!s.cars.length) s.cars = d.cars;
   if (s.active >= s.cars.length) s.active = 0;

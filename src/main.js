@@ -9,3 +9,6 @@ function boot(hotData) {
 }
 if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(boot);
 else boot(window.claude && window.claude.hot && window.claude.hot.data || null);
+
+// the radio starts with the first tap anywhere (browsers do not allow sound before that)
+addEventListener('pointerdown', () => Audio2.init(), { passive: true });

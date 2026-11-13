@@ -18,7 +18,7 @@ case "$MODE" in
   local)      OUT=test.html; THREE='<script src="vendor/three.min.js"></script>' ;;
   *) echo "unknown mode: $MODE"; exit 1 ;;
 esac
-FILES="data state engine shapes physics world garage carmodel fx partart magazine paintshop jobs meet audio install ui race main"
+FILES="data state engine shapes physics world garage carmodel fx partart magazine paintshop jobs meet audio music install walk garage3d pa net ui race main"
 if [ "$MODE" == "netlify" ]; then
   rm -rf dist; mkdir -p dist/icons
   cp vendor/three.min.js dist/

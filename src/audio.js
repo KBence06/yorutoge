@@ -2,7 +2,7 @@
 const Audio2 = {
   ctx: null, master: null, eng: null, noiseBuf: null, ratchetT: 0,
   init() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); Music.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       this.ctx = new AC();
@@ -11,7 +11,7 @@ const Audio2 = {
       this.master.connect(comp); comp.connect(this.ctx.destination);
       const len = this.ctx.sampleRate * 2, buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      this.noiseBuf = buf;
+      this.noiseBuf = buf; Music.resume();
     } catch (e) { this.ctx = null; }
   },
   noise() { const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; return s; },

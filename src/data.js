@@ -109,6 +109,72 @@ const CARS = {
       stockBoost: 0.65, ic: 0.65 },
     gears: [3.827, 2.36, 1.685, 1.312, 1.0, 0.793], final: 3.538, rw: 0.325, cd: 0.32, area: 1.98,
     mu: 1.04, brake: 1.1, steerLock: 0.54, lambda: 0.55, lugs: 5, lugTorque: 103, paint: '#d9a21b'
+  },
+  kagero: {
+    name: 'Rindo Kagerō Spec-R', year: 1999, layout: 'FR', body: 'coupe2', price: 2400000,
+    blurb: 'Az S20 utódja: merevebb kaszni, hatfokozatú váltó, gyári önzáró. A drift-videók főszereplője.',
+    mass: 1240, wheelbase: 2.525, frontW: 0.55, cgH: 0.49, length: 4.445, width: 1.695,
+    engine: { label: '2.0 DOHC turbó, golyóscsapágyas', disp: 2.0, cyl: 4, rotary: false, turbo: 'stock_kagero', comp: 8.5,
+      idle: 850, peakT: 4800, limiter: 7300, vePeak: 1.1, lowDrop: 0.4, highDrop: 0.42, margin: 3.0, octane: 98, afr: 11.6, inertia: 1.0,
+      stockBoost: 0.75, ic: 0.55 },
+    gears: [3.626, 2.2, 1.541, 1.213, 1.0, 0.767], final: 3.692, rw: 0.31, cd: 0.33, area: 1.88,
+    mu: 1.02, brake: 1.04, steerLock: 0.6, lambda: 0.55, lugs: 5, lugTorque: 108, paint: '#d9a21b'
+  },
+  hako: {
+    name: 'Kazane GT-2000 „Hako”', year: 1971, layout: 'FR', body: 'kyusha', price: 3600000,
+    blurb: 'Szögletes legenda a hetvenes évekből: soros hat, három karburátor, króm lökhárító. Nincs ABS, nincs szervó, nincs kegyelem.',
+    mass: 1100, wheelbase: 2.57, frontW: 0.56, cgH: 0.53, length: 4.33, width: 1.665,
+    engine: { label: '2.0 soros hat DOHC, karburátoros', disp: 2.0, cyl: 6, rotary: false, turbo: null, comp: 9.5,
+      idle: 950, peakT: 5600, limiter: 7500, vePeak: 1.0, lowDrop: 0.42, highDrop: 0.4, margin: 3.0, octane: 98, afr: 12.6, inertia: 1.05 },
+    gears: [2.957, 1.858, 1.311, 1.0, 0.852], final: 4.444, rw: 0.3, cd: 0.42, area: 1.85,
+    mu: 0.94, brake: 0.88, steerLock: 0.6, lambda: 0.54, lugs: 4, lugTorque: 98, paint: '#9aa0a8'
+  },
+  zetto: {
+    name: 'Tsurugi Zetto 300 Twin Turbo', year: 1990, layout: 'FR', body: 'zcoupe', price: 3300000,
+    blurb: 'Széles, lapos, nehéz. V6 ikerturbó és négykerék-kormányzás: autópályára született, de a hegyet is megtanulta.',
+    mass: 1520, wheelbase: 2.45, frontW: 0.55, cgH: 0.48, length: 4.31, width: 1.79,
+    engine: { label: '3.0 V6 DOHC ikerturbó', disp: 3.0, cyl: 6, rotary: false, turbo: 'stock_zetto', comp: 8.5,
+      idle: 750, peakT: 3800, limiter: 7000, vePeak: 0.965, lowDrop: 0.36, highDrop: 0.44, margin: 3.2, octane: 98, afr: 11.5, inertia: 1.15,
+      stockBoost: 0.65, ic: 0.55 },
+    gears: [3.214, 1.925, 1.302, 1.0, 0.752], final: 3.692, rw: 0.32, cd: 0.31, area: 1.92,
+    mu: 1.03, brake: 1.08, steerLock: 0.54, lambda: 0.55, lugs: 5, lugTorque: 108, paint: '#8e1420'
+  },
+  hayate: {
+    name: 'Koyo Hayate NS-R', year: 1992, layout: 'MR', body: 'super', price: 7800000,
+    blurb: 'Alumínium kaszni, középmotoros V6, 8000-es fordulat. A gyár azt mondta, mindennapos szuperautó. A hegy azt mondja, hibát nem bocsát meg.',
+    mass: 1270, wheelbase: 2.53, frontW: 0.42, cgH: 0.44, length: 4.43, width: 1.81,
+    engine: { label: '3.0 V6 DOHC változó szelepvezérlés, középen', disp: 3.0, cyl: 6, rotary: false, turbo: null, comp: 10.2,
+      idle: 800, peakT: 6400, limiter: 8200, vePeak: 1.005, lowDrop: 0.36, highDrop: 0.3, margin: 2.6, octane: 98, afr: 12.8, inertia: 0.9 },
+    gears: [3.071, 1.952, 1.4, 1.033, 0.771], final: 4.235, rw: 0.315, cd: 0.32, area: 1.78,
+    mu: 1.06, brake: 1.12, steerLock: 0.54, lambda: 0.5, lugs: 5, lugTorque: 108, paint: '#c8202a'
+  },
+  stella: {
+    name: 'Hoshino Stella GT-B Wagon', year: 1997, layout: 'AWD', body: 'wagon', price: 2300000,
+    blurb: 'Kombi boxermotorral és ikerturbóval. Hátul elfér négy gumi és egy emelő, elöl 280 lóerő.',
+    mass: 1460, wheelbase: 2.63, frontW: 0.58, cgH: 0.53, length: 4.68, width: 1.695,
+    engine: { label: '2.0 boxer ikerturbó', disp: 2.0, cyl: 4, rotary: false, turbo: 'stock_stella', comp: 8.5,
+      idle: 800, peakT: 4400, limiter: 7200, vePeak: 1.23, lowDrop: 0.4, highDrop: 0.46, margin: 2.9, octane: 98, afr: 11.4, inertia: 1.0,
+      stockBoost: 0.9, ic: 0.55 },
+    gears: [3.166, 1.882, 1.296, 0.972, 0.738], final: 4.444, rw: 0.305, cd: 0.34, area: 2.02,
+    mu: 1.01, brake: 1.04, steerLock: 0.55, lambda: 0.56, lugs: 5, lugTorque: 98, paint: '#16264f'
+  },
+  porter: {
+    name: 'Hoshino Porter 660', year: 1990, layout: 'MR', body: 'keitruck', price: 180000,
+    blurb: 'Kei-kisteherautó, a motor az ülés alatt. Negyvenhat lóerő, hátsókerék-hajtás, üres plató: a parkolóban mindenki röhög, amíg el nem kezd csúszni.',
+    mass: 700, wheelbase: 1.87, frontW: 0.5, cgH: 0.62, length: 3.295, width: 1.395,
+    engine: { label: '0.66 háromhengeres szívó', disp: 0.66, cyl: 3, rotary: false, turbo: null, comp: 10.0,
+      idle: 950, peakT: 4800, limiter: 7800, vePeak: 0.9, lowDrop: 0.36, highDrop: 0.45, margin: 3.2, octane: 98, afr: 12.8, inertia: 0.75 },
+    gears: [4.0, 2.31, 1.52, 1.07, 0.87], final: 5.6, rw: 0.255, cd: 0.46, area: 2.05,
+    mu: 0.92, brake: 0.88, steerLock: 0.66, lambda: 0.56, lugs: 4, lugTorque: 85, paint: '#e9e6dc'
+  },
+  sovereign: {
+    name: 'Tsurugi Sovereign 4.0 V8', year: 1995, layout: 'FR', body: 'vip', price: 2700000,
+    blurb: 'Elnöki limuzin V8-cal. Ültetve, mélytányéros felnin, fekete fóliával: ez a VIP stílus. Kanyarban hajó, egyenesben gőzmozdony.',
+    mass: 1750, wheelbase: 2.85, frontW: 0.55, cgH: 0.54, length: 4.995, width: 1.83,
+    engine: { label: '4.0 V8 DOHC szívó', disp: 4.0, cyl: 8, rotary: false, turbo: null, comp: 10.4,
+      idle: 650, peakT: 4400, limiter: 6500, vePeak: 1.0, lowDrop: 0.3, highDrop: 0.42, margin: 3.2, octane: 98, afr: 12.8, inertia: 1.3 },
+    gears: [2.804, 1.531, 1.0, 0.705], final: 3.615, rw: 0.325, cd: 0.3, area: 2.15,
+    mu: 0.99, brake: 1.05, steerLock: 0.56, lambda: 0.56, lugs: 5, lugTorque: 103, paint: '#141418'
   }
 };
 
@@ -122,6 +188,9 @@ const TURBOS = {
   stock_cresta: { name: 'Gyári turbó', spool0: 2400, spool1: 3500, maxBoost: 1.1, flowPS: 400 },
   stock_arashi: { name: 'Gyári twin-scroll turbó', spool0: 2300, spool1: 3300, maxBoost: 1.3, flowPS: 360 },
   stock_raijin: { name: 'Gyári sorosan kapcsolt ikerturbó', spool0: 2000, spool1: 3200, maxBoost: 1.4, flowPS: 600 },
+  stock_kagero: { name: 'Gyári golyóscsapágyas turbó', spool0: 2200, spool1: 3300, maxBoost: 1.2, flowPS: 340 },
+  stock_zetto: { name: 'Gyári ikerturbó', spool0: 2100, spool1: 3300, maxBoost: 1.1, flowPS: 420 },
+  stock_stella: { name: 'Gyári szekvenciális ikerturbó', spool0: 2000, spool1: 3200, maxBoost: 1.25, flowPS: 370 },
   kt18:        { name: 'KT-18', spool0: 2300, spool1: 3400, maxBoost: 1.0, flowPS: 270 },
   kt22:        { name: 'KT-22', spool0: 2900, spool1: 4200, maxBoost: 1.3, flowPS: 360 },
   kt28:        { name: 'KT-28', spool0: 3600, spool1: 5100, maxBoost: 1.6, flowPS: 500 }
@@ -134,7 +203,9 @@ const SLOTS = {
   arb: 'Stabilizátorok', camber: 'Dőlésállítás', strut: 'Toronymerevítő', pads: 'Fékbetét', brakes: 'Fékrendszer',
   hbrake: 'Kézifék', tires: 'Gumik', wheels: 'Felnik', cage: 'Bukócső', seat: 'Ülés', interior: 'Belső tér',
   hood: 'Motorháztető', wing: 'Hátsó szárny', kit: 'Karosszéria-kit', decal: 'Matrica',
-  flares: 'Sárvédő-szélesítés', lights: 'Fényszóró', tail: 'Hátsó lámpa', tint: 'Ablakfólia', banner: 'Szélvédőcsík', neon: 'Neon underglow'
+  flares: 'Sárvédő-szélesítés', lights: 'Fényszóró', tail: 'Hátsó lámpa', tint: 'Ablakfólia', banner: 'Szélvédőcsík', neon: 'Neon underglow',
+  bumper: 'Első lökhárító', canards: 'Kanárdok', diffuser: 'Diffúzor', roof: 'Tető', louver: 'Hátsóablak-zsalu', mirrors: 'Tükrök', pipes: 'Kipufogóvég',
+  pod: 'Lámpasor', towhook: 'Vonószem', oilcooler: 'Olajhűtő', tirelet: 'Gumifelirat', intneon: 'Belső fény'
 };
 
 const CATS = [
@@ -144,7 +215,8 @@ const CATS = [
   { id: 'futomu', name: 'Futómű', jp: 'サス', slots: ['susp', 'arb', 'camber', 'strut'] },
   { id: 'fek', name: 'Fék és gumi', jp: 'ブレーキ', slots: ['pads', 'brakes', 'hbrake', 'tires'] },
   { id: 'karosszeria', name: 'Súlycsökkentés', jp: 'ボディ', slots: ['cage', 'seat', 'interior'] },
-  { id: 'kulso', name: 'Külső', jp: '外装', slots: ['wheels', 'hood', 'wing', 'kit', 'flares', 'lights', 'tail', 'tint', 'banner', 'neon', 'decal'] }
+  { id: 'kulso', name: 'Külső', jp: '外装', slots: ['wheels', 'tirelet', 'hood', 'lights', 'tail', 'tint', 'banner', 'neon', 'intneon', 'decal'] },
+  { id: 'aero', name: 'Body kit', jp: 'エアロ', slots: ['wing', 'kit', 'bumper', 'canards', 'diffuser', 'flares', 'roof', 'louver', 'mirrors', 'pipes', 'pod', 'oilcooler', 'towhook'] }
 ];
 
 // fx keys are read by the car model in engine.js
@@ -190,8 +262,8 @@ const PARTS = [
   { id: 'wheel2', slot: 'wheels', name: 'Kovácsolt 5-küllős bronz felni', brand: 'Rays of Tsuki', price: 132000, days: 3, bolts: 'lugs', torque: 'lugs', w: -11, fx: { unsprung: 0.03, wheel: 'spoke' }, desc: 'Kovácsolt, könnyű, bronz.' },
   // --- body & weight
   { id: 'cage1', slot: 'cage', name: '6 pontos bukócső', brand: 'Ronin Garage', price: 118000, days: 3, bolts: 6, torque: 45, w: 18, fx: { cage: true }, desc: 'Merevebb kaszni, kisebb sérülés ütközésnél. +18 kg.' },
-  { id: 'seat1', slot: 'seat', name: 'Kagylóülés', brand: 'Hoshi Speed', price: 58000, days: 2, bolts: 4, torque: 40, w: -12, fx: {}, desc: 'Megtart oldalirányban. −12 kg.' },
-  { id: 'strip1', slot: 'interior', name: 'Hátsó ülés és kárpit kiszerelése', brand: 'Saját munka', price: 0, days: 0, bolts: 6, torque: 20, w: -28, fx: {}, desc: 'Ingyen van, csak a csavarhúzón múlik. −28 kg.' },
+  { id: 'seat1', slot: 'seat', name: 'Kagylóülés', brand: 'Hoshi Speed', price: 58000, days: 2, bolts: 4, torque: 40, w: -12, fx: { seat: true }, desc: 'Megtart oldalirányban. −12 kg.' },
+  { id: 'strip1', slot: 'interior', name: 'Hátsó ülés és kárpit kiszerelése', brand: 'Saját munka', price: 0, days: 0, bolts: 6, torque: 20, w: -28, fx: { strip: true }, desc: 'Ingyen van, csak a csavarhúzón múlik. −28 kg.' },
   { id: 'hood1', slot: 'hood', name: 'Karbon motorháztető', brand: 'Kaminari Works', price: 96000, days: 3, bolts: 4, torque: 10, w: -9, fx: { hood: 'carbon' }, desc: 'Könnyű és fekete. −9 kg.' },
   { id: 'wing1', slot: 'wing', name: 'GT szárny', brand: 'Tsuyoshi Racing', price: 72000, days: 2, bolts: 4, torque: 12, w: 4, fx: { wing: 'gt', downforce: 0.18 }, desc: 'Kevés, de érezhető leszorítóerő a hátsó tengelyen nagy sebességnél.' },
   { id: 'wing2', slot: 'wing', name: 'Csomagtartó-ajak spoiler', brand: 'Tsuyoshi Racing', price: 28000, days: 1, bolts: 4, torque: 8, w: 1, fx: { wing: 'lip', downforce: 0.05 }, desc: 'Visszafogott, korhű.' },
@@ -208,7 +280,32 @@ const PARTS = [
   { id: 'banner1', slot: 'banner', name: 'Szélvédőcsík felirattal', brand: 'Helyi nyomda', price: 8000, days: 1, bolts: 0, fx: { banner: true }, desc: 'A felirat a festőműhelyben választható.' },
   { id: 'neon1', slot: 'neon', name: 'Neon underglow készlet', brand: 'Hoshi Speed', price: 58000, days: 2, bolts: 4, torque: 6, w: 3, fx: { neon: true }, desc: 'Hideg katódcsövek az alváz alatt. A színe a festőműhelyben állítható.' },
   { id: 'decal1', slot: 'decal', name: 'Csapatmatrica: Kurozawa Wolves', brand: 'Helyi csapat', price: 6000, days: 0, bolts: 0, fx: { decal: 'wolves' }, desc: 'Ha már ide tartozol.' },
-  { id: 'decal2', slot: 'decal', name: 'Szponzormatrica: Kaminari Works', brand: 'Kaminari Works', price: 6000, days: 0, bolts: 0, fx: { decal: 'kaminari' }, desc: 'Villám az ajtón.' }
+  { id: 'decal2', slot: 'decal', name: 'Szponzormatrica: Kaminari Works', brand: 'Kaminari Works', price: 6000, days: 0, bolts: 0, fx: { decal: 'kaminari' }, desc: 'Villám az ajtón.' },
+  { id: 'decal3', slot: 'decal', name: 'Csapatmatrica: Midnight Loop', brand: 'Helyi csapat', price: 9000, days: 0, bolts: 0, fx: { decal: 'loop' }, desc: 'A kikötői körgyűrű éjszakai klubja. Aki ezt hordja, annak villognak a parkolóban.' },
+  { id: 'decal4', slot: 'decal', name: 'Matricabomba', brand: 'Saját munka', price: 14000, days: 1, bolts: 0, fx: { decal: 'bomb' }, desc: 'Száz kis matrica egymáson a hátsó sárvédőn. Egy horpadást is eltakar.' },
+  // --- v10: wheels, aero and street style
+  { id: 'wheel6', slot: 'wheels', name: 'Kovácsolt hatküllős, fegyverszürke', brand: 'Rays of Tsuki', price: 148000, days: 3, bolts: 'lugs', torque: 'lugs', w: -12, fx: { unsprung: 0.03, wheel: 'te' }, desc: 'Hat vékony küllő, egy darabból kovácsolva. A time attack mezőny fele ezen áll.' },
+  { id: 'wheel7', slot: 'wheels', name: 'Nyolcküllős klasszikus, fekete', brand: 'Rays of Tsuki', price: 110000, days: 2, bolts: 'lugs', torque: 'lugs', w: -5, fx: { unsprung: 0.01, wheel: 'wat' }, desc: 'A hetvenes évek versenyfelnije polírozott peremmel. Régi vasra kötelező.' },
+  { id: 'wheel8', slot: 'wheels', name: 'Polírozott csillagfelni', brand: 'Rays of Tsuki', price: 126000, days: 3, bolts: 'lugs', torque: 'lugs', w: -3, fx: { wheel: 'star' }, desc: 'Öt széles ág, tükörfényes. Az utcai lámpák alatt forog a legszebben.' },
+  { id: 'wheel9', slot: 'wheels', name: 'Lapos négylyukú felni', brand: 'Rays of Tsuki', price: 72000, days: 2, bolts: 'lugs', torque: 'lugs', w: -1, fx: { wheel: 'long' }, desc: 'Sima tárcsa négy kerek lyukkal. A kaido racerek kedvence.' },
+  { id: 'tirelet1', slot: 'tirelet', name: 'Fehér gumifelirat', brand: 'Saját munka', price: 9000, days: 1, bolts: 0, fx: { tirelet: true }, desc: 'Gumifestő filccel kihúzod a betűket az oldalfalon. Egy este munka.' },
+  { id: 'wing4', slot: 'wing', name: 'Takeyari toronyszárny', brand: 'Bōsō Style', price: 64000, days: 2, bolts: 4, torque: 12, w: 5, fx: { wing: 'boso', downforce: 0.05 }, desc: 'Fél méter magas csöveken ül. Leszorítóerőt alig ad, tekintetet annál többet.' },
+  { id: 'wing5', slot: 'wing', name: 'Hattyúnyakú karbon szárny', brand: 'Tsuyoshi Racing', price: 168000, days: 3, bolts: 6, torque: 12, w: 5, fx: { wing: 'swan', downforce: 0.26 }, desc: 'Felülről függesztett lap, kétrészes profil. Gyors íveken érezni, hogy leül a hátulja.' },
+  { id: 'bumper1', slot: 'bumper', name: 'Aero első lökhárító', brand: 'Kaminari Works', price: 88000, days: 3, bolts: 6, torque: 10, w: 2, fx: { bumper: 'aero', downforce: 0.04 }, desc: 'Nagy hűtőnyílás, fékhűtő csatornák, karbon splitter.' },
+  { id: 'bumper2', slot: 'bumper', name: 'Deppa állspoiler', brand: 'Bōsō Style', price: 54000, days: 2, bolts: 6, torque: 10, w: 4, fx: { bumper: 'deppa' }, desc: 'Előrenyúló „kiálló fog”, ahogy a nyolcvanas évek sziluettversenyautóin. Fekvőrendőrnél imádkozz.' },
+  { id: 'canard1', slot: 'canards', name: 'Karbon kanárdok', brand: 'Tsuyoshi Racing', price: 32000, days: 1, bolts: 4, torque: 6, fx: { canards: true, downforce: 0.03 }, desc: 'Két-két kis szárny az első sarkokon. Az orrot nyomja le.' },
+  { id: 'diff1', slot: 'diffuser', name: 'Hátsó diffúzor', brand: 'Tsuyoshi Racing', price: 58000, days: 2, bolts: 6, torque: 10, w: 3, fx: { diffuser: true, downforce: 0.05 }, desc: 'Terelőlapok a hátsó lökhárító alatt.' },
+  { id: 'flares2', slot: 'flares', name: 'Works túlsárvédők', brand: 'Bōsō Style', price: 198000, days: 5, bolts: 8, torque: 10, w: 9, fx: { flares: 'works' }, desc: 'Gyári versenyautók mintájára: tíz centi oldalanként, széles gumival. Ki kell vágni hozzá a sárvédőt.' },
+  { id: 'roof1', slot: 'roof', name: 'Tetőlégbeömlő', brand: 'Kaminari Works', price: 38000, days: 2, bolts: 4, torque: 6, w: 1, fx: { roofscoop: true }, desc: 'Rallyautókról. Friss levegő a kabinba, ha már a klímát kidobtad.' },
+  { id: 'louver1', slot: 'louver', name: 'Hátsóablak-zsalu', brand: 'Ronin Garage', price: 42000, days: 2, bolts: 4, torque: 6, w: 3, fx: { louver: true }, desc: 'Fekete lamellák a hátsó szélvédőn. Árnyékol, és nagyon nyolcvanas évek.' },
+  { id: 'mirror1', slot: 'mirrors', name: 'Sárvédőtükrök', brand: 'Bōsō Style', price: 24000, days: 1, bolts: 4, torque: 5, fx: { mirrors: 'fender' }, desc: 'Króm tükrök az első sárvédőn, ahogy régen minden japán autón.' },
+  { id: 'mirror2', slot: 'mirrors', name: 'Karbon aero tükrök', brand: 'Tsuyoshi Racing', price: 36000, days: 1, bolts: 4, torque: 5, w: -1, fx: { mirrors: 'aero' }, desc: 'Kicsi, könnyű, alig látsz benne. Versenyautóra való.' },
+  { id: 'pipes1', slot: 'pipes', name: 'Takeyari kipufogócsövek', brand: 'Bōsō Style', price: 46000, days: 2, bolts: 4, torque: 20, w: 4, fx: { pipes: 'takeyari' }, desc: 'Bambuszlándzsa: két króm cső az ég felé. A rendőr két utcával arrébb is látja.' },
+  { id: 'pipes2', slot: 'pipes', name: 'Titán ágyúcső-vég', brand: 'Ronin Garage', price: 52000, days: 1, bolts: 2, torque: 20, w: -2, fx: { pipes: 'cannon' }, desc: 'Százötven milliméteres vég, kékre égett titán.' },
+  { id: 'pod1', slot: 'pod', name: 'Rally lámpasor', brand: 'Hoshi Speed', price: 68000, days: 2, bolts: 4, torque: 8, w: 4, fx: { pod: true }, desc: 'Négy kerek fényszóró a motorháztetőn. Ködben és esőben messzebb látsz.' },
+  { id: 'oil1', slot: 'oilcooler', name: 'Külső olajhűtő', brand: 'Kurogane', price: 74000, days: 2, bolts: 4, torque: 12, w: 3, fx: { oilcooler: true }, desc: 'Az első lökhárítóra szerelve, fonott csövekkel. A motor lassabban fárad a hosszú lejtőn.' },
+  { id: 'tow1', slot: 'towhook', name: 'Piros vonószem', brand: 'Ronin Garage', price: 6000, days: 0, bolts: 1, torque: 40, fx: { towhook: true }, desc: 'Ha egyszer az árokból kell kihúzni. Addig csak jól néz ki.' },
+  { id: 'intneon1', slot: 'intneon', name: 'Belső hangulatfény', brand: 'Hoshi Speed', price: 22000, days: 1, bolts: 2, torque: 4, fx: { intneon: true }, desc: 'Neoncső a lábtérben és a kalaptartón. A színe az underglow színével együtt állítható.' }
 ];
 const PART = Object.fromEntries(PARTS.map(p => [p.id, p]));
 
@@ -260,7 +357,7 @@ const FINISHES = {
   gloss: { name: 'Fényes', mult: 1 }, metal: { name: 'Metál', mult: 1.3 }, pearl: { name: 'Gyöngyház', mult: 1.6 }, matte: { name: 'Matt', mult: 1.4 }
 };
 const LIVERIES = {
-  twotone: { name: 'Kéttónusú' }, stripes: { name: 'Versenycsíkok' }, side: { name: 'Oldalcsík' }, tribal: { name: 'Tribal' }, kanji: { name: '峠 kanji' }
+  twotone: { name: 'Kéttónusú' }, stripes: { name: 'Versenycsíkok' }, side: { name: 'Oldalcsík' }, tribal: { name: 'Tribal' }, kanji: { name: '峠 kanji' }, flames: { name: 'Lángok' }, bolt: { name: 'Villám' }, checker: { name: 'Kockás zászló' }
 };
 const NEONS = [['#4ee6d4', 'Türkiz'], ['#2f7bff', 'Kék'], ['#b77bff', 'Lila'], ['#ff3dbb', 'Pink'], ['#3dff6e', 'Zöld'], ['#ff3d4f', 'Piros']];
 const BANNERS = [['yoru', 'YORU TŌGE'], ['wolves', 'KUROZAWA WOLVES'], ['kaminari', 'KAMINARI WORKS'], ['touge', '峠 最速']];
@@ -299,12 +396,32 @@ const TOUGES = [
       { id: 'kaede', name: 'Kaede', team: 'Kasumi Seven', car: 'arashi', color: '#e9e6dc', look: { livery: 'stripes', col2: '#2a4f9a', finish: 'pearl' }, ps: 380, skill: 0.63, prize: 520000, rep: 60, reqRep: 170, line: 'Négy kerék, négy évszak. A hegyen mindig én vagyok otthon.' },
       { id: 'genji', name: 'Genji', team: 'Kasumi Seven', car: 'kamui', color: '#d9a21b', look: { livery: 'side', col2: '#141418', finish: 'metal' }, ps: 360, skill: 0.65, prize: 680000, rep: 70, reqRep: 195, line: 'Középmotor. Ha a farom elmegy, te már rég a korláton vagy.' },
       { id: 'tengu', name: '„Tengu”', team: 'nincs csapata', car: 'raijin', color: '#141418', look: { livery: 'kanji', col2: '#b3261e', finish: 'matte', neon: '#ff3d4f' }, ps: 520, skill: 0.67, prize: 1000000, rep: 150, reqRep: 230, line: 'Senki nem látta az arcomat. A hátsó lámpáimat annál többen.' }
+    ] },
+  { id: 'shiraito', name: 'Shiraito-dōro', jp: '白糸道路', dir: 'down', reqRep: 120, grade: -0.085,
+    desc: 'Régi fizetős út a vízesés mellett: hosszú, gyors lejtő kevés hajtűvel. Itt a fék és a bátorság fogy el előbb.',
+    segs: [['s',120],['c',180,-25],['s',90],['c',110,40],['s',70],['c',75,-55],['s',110],['c',140,30],['c',140,-30],['s',130],['c',22,150],['s',90],['c',90,-45],['s',60],['c',60,65],['s',150],['c',160,-28],['s',100],['c',48,85],['s',70],['c',26,-140],['s',120],['c',120,35],['s',80],['c',70,-50],['s',170]],
+    rivals: [
+      { id: 'ayane', name: 'Ayane', team: 'Shiraito Downhill Club', car: 'kagero', color: '#3fa7d6', look: { livery: 'flames', col2: '#f4f4f0', finish: 'pearl' }, vis: { wing: 'gt', wheel: 'te', lower: 0.04, bumper: 'aero', finish: 'pearl', livery: 'flames', col2: '#f4f4f0' }, ps: 330, skill: 0.6, prize: 400000, rep: 50, reqRep: 120, line: 'Lefelé nem a motor visz. Engedd el a féket, ha mered.' },
+      { id: 'daisuke', name: 'Daisuke', team: 'Shiraito Downhill Club', car: 'hako', color: '#9aa0a8', look: { livery: 'side', col2: '#141418' }, vis: { wheel: 'wat', lower: 0.05, flares: 'works', bumper: 'deppa', pipes: 'takeyari', oilcooler: true, finish: 'gloss', livery: 'side', col2: '#141418' }, ps: 260, skill: 0.64, prize: 520000, rep: 60, reqRep: 145, line: 'Ez a kocsi idősebb nálad. És még mindig gyorsabb.' },
+      { id: 'doc', name: '„Doki”', team: 'Shiraito Downhill Club', car: 'hayate', color: '#f4f4f0', look: { livery: 'stripes', col2: '#c8202a', finish: 'pearl' }, ps: 340, skill: 0.66, prize: 760000, rep: 80, reqRep: 175, line: 'Nappal sebész vagyok. Éjjel is pontosan vágok.' }
     ] }
 ];
 
+// The harbour straight: zero-yon, four hundred metres from a standing start.
+const DRAG = { id: 'wangan', name: 'Kikötői egyenes', jp: '湾岸ゼロヨン', dir: 'flat', grade: 0, drag: true, segs: [['s', 1000]], rivals: [
+  { id: 'd_jiro', launch: 0.86, name: 'Jirō', team: 'Midnight Loop', car: 'bambina', color: '#d9a21b', look: {}, ps: 92, skill: 0.5, prize: 15000, rep: 4, reqRep: 0, line: 'Hatszázhatvan köbcenti. Ne nevess, amíg nem láttad a hátulját.' },
+  { id: 'd_emi', name: 'Emi', team: 'Midnight Loop', car: 'types', color: '#f4f4f0', look: { livery: 'checker', col2: '#141418' }, ps: 205, skill: 0.5, prize: 30000, rep: 6, reqRep: 15, line: 'Nyolcezer-négyszáznál váltok. Te hol?' },
+  { id: 'd_taku', launch: 1.2, name: 'Taku', team: 'Midnight Loop', car: 'kagero', color: '#6aa84f', look: { livery: 'bolt', col2: '#141418', neon: '#3dff6e' }, ps: 340, skill: 0.5, prize: 60000, rep: 9, reqRep: 50, line: 'A zöld lámpa nekem szól. Te csak nézed.' },
+  { id: 'd_baron', launch: 1.45, name: 'A Báró', team: 'Midnight Loop', car: 'sovereign', color: '#141418', look: { finish: 'pearl', neon: '#b77bff' }, vis: { wheel: 'dish', lower: 0.07, tint: true, finish: 'pearl', neon: true, neonColor: '#b77bff', camber: [-5, -6] }, ps: 450, skill: 0.5, prize: 110000, rep: 12, reqRep: 100, line: 'Kompresszor a V8-on. A hátsó ülésen pezsgő. Szállj be, ha vesztettél.' },
+  { id: 'd_akuma', launch: 1.85, name: '„Wangan no Akuma”', team: 'nincs csapata', car: 'zetto', color: '#16264f', look: { finish: 'metal' }, vis: { wheel: 'te', lower: 0.05, wing: 'swan', bumper: 'aero', finish: 'metal', pipes: 'cannon' }, ps: 640, skill: 0.5, prize: 220000, rep: 25, reqRep: 180, line: 'Háromszázzal megyek haza minden éjjel. Négyszáz méter nekem bemelegítés.' }
+] };
+const TA_TIMES = {"kurozawa":[82,77.3,73.8,69.6],"kurozawa_r":[90.6,82.6,80,73.8],"mikazuki":[95,86.7,83.6,77.2],"mikazuki_r":[86.8,81.8,77.9,73.6],"okami":[101.3,95.9,91.8,86.3],"okami_r":[115.6,104.1,102.5,93],"kasumi":[108.7,102.3,98,92.5],"kasumi_r":[121.2,111.1,106.9,98],"shiraito":[93.4,87.5,83.7,80.3],"shiraito_r":[105,94.4,90.8,84.4]};
+const TA_PRIZE = { bronze: 10000, silver: 25000, gold: 60000, plat: 150000 }, TA_NAME = { bronze: 'Bronz', silver: 'Ezüst', gold: 'Arany', plat: 'Platina' }, TA_ORDER = ['bronze', 'silver', 'gold', 'plat'];
+
 // economy: income scale. Rival prizes, jobs and sponsors are all multiplied by this.
 const PAY = 1.5;
-for (const tg of TOUGES) for (const rv of tg.rivals) rv.prize = Math.round(rv.prize * PAY / 1000) * 1000;
+for (const tg of TOUGES.concat([DRAG])) for (const rv of tg.rivals) rv.prize = Math.round(rv.prize * PAY / 1000) * 1000;
+for (const k of Object.keys(TA_PRIZE)) TA_PRIZE[k] = Math.round(TA_PRIZE[k] * PAY / 1000) * 1000;
 
 const DYNO_COST = 3000;
 const FUEL_PREMIUM_COST = 2500; // per race night

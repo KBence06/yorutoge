@@ -22,7 +22,21 @@ const SHAPES = {
   raijin: { H: 1.275, smooth: 3, belt: 0.67, pillar: 0.47, cowl: 0.75, lights: 'rect', tail: 'round', spoiler: 'wing', flare: 0.025, bumpers: 'body',
     outline: [[0,0.2],[0,0.47],[0.015,0.56],[0.06,0.6],[0.16,0.63],[0.3,0.92],[0.37,0.985],[0.55,0.985],[0.6,0.94],[0.71,0.66],[0.75,0.63],[0.95,0.55],[1,0.46],[1,0.3],[0.98,0.19]] },
   gt4: { H: 1.34, smooth: 1, belt: 0.665, pillar: 0.47, cowl: 0.78, lights: 'rect', tail: 'round4', spoiler: 'trunk', flare: 0.04, bumpers: 'body',
-    outline: [[0,0.2],[0,0.46],[0.01,0.55],[0.03,0.6],[0.2,0.625],[0.23,0.645],[0.32,0.93],[0.37,0.985],[0.59,0.985],[0.63,0.955],[0.74,0.665],[0.78,0.64],[0.96,0.59],[1,0.51],[1,0.3],[0.98,0.19]] }
+    outline: [[0,0.2],[0,0.46],[0.01,0.55],[0.03,0.6],[0.2,0.625],[0.23,0.645],[0.32,0.93],[0.37,0.985],[0.59,0.985],[0.63,0.955],[0.74,0.665],[0.78,0.64],[0.96,0.59],[1,0.51],[1,0.3],[0.98,0.19]] },
+  kagero: { H: 1.285, smooth: 3, belt: 0.67, pillar: 0.46, cowl: 0.76, lights: 'rect', tail: 'corner', spoiler: 'trunk', flare: 0.015, bumpers: 'body',
+    outline: [[0,0.2],[0,0.46],[0.012,0.56],[0.05,0.61],[0.14,0.64],[0.19,0.67],[0.3,0.92],[0.37,0.985],[0.55,0.985],[0.6,0.94],[0.72,0.665],[0.76,0.635],[0.95,0.55],[1,0.46],[1,0.3],[0.98,0.19]] },
+  hako: { H: 1.37, smooth: 1, belt: 0.62, pillar: 0.42, cowl: 0.74, lights: 'round4', tail: 'round4', spoiler: null, flare: 0.012, bumpers: 'chrome', fenderMirror: true,
+    outline: [[0,0.21],[0,0.4],[0.006,0.57],[0.02,0.605],[0.17,0.625],[0.21,0.65],[0.3,0.93],[0.35,0.985],[0.56,0.985],[0.6,0.95],[0.71,0.65],[0.74,0.625],[0.975,0.6],[1,0.56],[1,0.38],[0.985,0.21]] },
+  zetto: { H: 1.25, smooth: 3, belt: 0.67, pillar: 0.4, cowl: 0.72, lights: 'slit', tail: 'band', spoiler: 'trunk', flare: 0.03, bumpers: 'body',
+    outline: [[0,0.21],[0,0.47],[0.02,0.57],[0.07,0.62],[0.13,0.66],[0.27,0.92],[0.36,0.985],[0.5,0.985],[0.56,0.94],[0.69,0.67],[0.72,0.645],[0.93,0.54],[0.985,0.47],[1,0.38],[1,0.28],[0.975,0.18]] },
+  hayate: { H: 1.17, smooth: 3, belt: 0.68, pillar: 0.46, cowl: 0.7, lights: 'popup', tail: 'band', spoiler: 'wing', flare: 0.03, bumpers: 'body', intake: true,
+    outline: [[0,0.22],[0,0.52],[0.02,0.61],[0.12,0.65],[0.27,0.69],[0.38,0.93],[0.45,0.985],[0.56,0.985],[0.61,0.93],[0.7,0.67],[0.93,0.5],[1,0.41],[1,0.28],[0.97,0.18]] },
+  stella: { H: 1.47, smooth: 2, belt: 0.63, pillar: 0.5, cowl: 0.78, lights: 'rect', tail: 'corner', spoiler: 'roof', flare: 0.02, bumpers: 'body', doors: 4, scoop: true,
+    outline: [[0,0.19],[0,0.42],[0.008,0.56],[0.02,0.66],[0.05,0.9],[0.09,0.97],[0.15,0.985],[0.6,0.985],[0.65,0.94],[0.75,0.66],[0.78,0.635],[0.96,0.58],[1,0.5],[1,0.3],[0.98,0.18]] },
+  porter: { H: 1.76, smooth: 1, belt: 0.56, pillar: 0.6, cowl: 0.97, lights: 'round2', tail: 'corner', spoiler: null, flare: 0, bumpers: 'body', bed: true, lampY: 0.43,
+    outline: [[0,0.2],[0,0.46],[0.01,0.475],[0.55,0.475],[0.565,0.5],[0.57,0.96],[0.6,1],[0.86,1],[0.9,0.97],[0.985,0.6],[1,0.52],[1,0.3],[0.985,0.2]] },
+  sovereign: { H: 1.42, smooth: 2, belt: 0.65, pillar: 0.5, cowl: 0.78, lights: 'rect', tail: 'band', spoiler: null, flare: 0.01, bumpers: 'body', doors: 4, grille: 'chrome',
+    outline: [[0,0.2],[0,0.44],[0.01,0.55],[0.03,0.585],[0.2,0.61],[0.245,0.64],[0.33,0.91],[0.39,0.985],[0.6,0.985],[0.65,0.935],[0.75,0.665],[0.78,0.64],[0.965,0.6],[1,0.53],[1,0.31],[0.98,0.19]] }
 };
 
 function chaikin(pts, it) {
@@ -101,3 +115,15 @@ function shapeTopAt(sh, z) {
   }
   return best;
 }
+
+// 3D wheel centres. n spokes, widths as a fraction of the rim radius at the hub (w0) and at the rim (w1).
+const WHEEL_STYLES = {
+  stock: { dish: 0.012 }, fan: { dish: 0.006 }, long: { dish: 0.02 },
+  mesh: { n: 10, pair: 0.36, w0: 0.045, w1: 0.04, t: 0.02, lean: 0.012, color: 0xc8c3b4, dish: 0.03, rim: 0.86, metal: 0.8 },
+  spoke: { n: 5, w0: 0.26, w1: 0.2, t: 0.032, lean: 0.03, color: 0xb8823c, dish: 0.014, metal: 0.75 },
+  te: { n: 6, w0: 0.17, w1: 0.13, t: 0.03, lean: 0.035, color: 0x33363c, dish: 0.012, metal: 0.6 },
+  dish: { n: 8, w0: 0.1, w1: 0.08, t: 0.022, lean: 0.004, color: 0xc99b3c, dish: 0.06, rim: 0.7, metal: 0.85 },
+  white: { n: 6, w0: 0.26, w1: 0.24, t: 0.03, lean: 0.012, color: 0xf2f2ee, dish: 0.012, metal: 0.05, rough: 0.5 },
+  wat: { n: 8, w0: 0.17, w1: 0.11, t: 0.03, lean: 0.03, color: 0x1b1c20, dish: 0.035, rim: 0.88, metal: 0.4 },
+  star: { n: 5, w0: 0.5, w1: 0.1, t: 0.026, lean: 0.016, color: 0xd0d3d8, dish: 0.03, rim: 0.86, metal: 0.9 }
+};

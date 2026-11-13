@@ -5,8 +5,9 @@ const LOC = { intake: 'bay', header: 'bay', cam: 'bay', turbo: 'bay', ic: 'bay',
   exhaust: 'under', flywheel: 'under', clutch: 'under', lsd: 'under', final: 'under', arb: 'under',
   susp: 'wheel', pads: 'wheel', brakes: 'wheel', tires: 'wheel', wheels: 'wheel',
   ecu: 'cabin', pump: 'cabin', hbrake: 'cabin', cage: 'cabin', seat: 'cabin', interior: 'cabin', hood: 'out', wing: 'out', kit: 'out', decal: 'out',
-  flares: 'out', lights: 'bay', tail: 'out', tint: 'cabin', banner: 'out', neon: 'under' };
-const ADDITIVE = new Set(['wing', 'kit', 'cage', 'strut', 'decal', 'boost', 'flares', 'tint', 'banner', 'neon']);
+  flares: 'out', lights: 'bay', tail: 'out', tint: 'cabin', banner: 'out', neon: 'under',
+  bumper: 'out', canards: 'out', diffuser: 'under', roof: 'out', louver: 'out', mirrors: 'out', pipes: 'under', pod: 'out', towhook: 'out', oilcooler: 'bay', tirelet: 'wheel', intneon: 'cabin' };
+const ADDITIVE = new Set(['wing', 'kit', 'cage', 'strut', 'decal', 'boost', 'flares', 'tint', 'banner', 'neon', 'canards', 'diffuser', 'roof', 'louver', 'pod', 'towhook', 'oilcooler', 'tirelet', 'intneon']);
 
 const ArtCache = {
   m: new Map(),
@@ -619,7 +620,7 @@ const Install = {
       run.prog.replaceChildren(...run.steps.map(x => el('li', { class: 'done' }, el('b', null, '✓'), el('span', null, x.name))));
       s.append(el('div', { class: 'inst-q' }, `${pc}%`),
         el('p', { style: 'margin:0 0 10px' }, q >= 0.85 ? 'Precíz munka. Ez így gyári minőség.' : q >= 0.6 ? 'Rendben van, de nem tökéletes.' : 'Hanyag munka. Kotyogni, szivárogni fog, vagy nem hozza, amit tudnia kéne.'),
-        el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: () => { if (run.custom) { UI.close(); run.custom.onDone(q); return; } this.apply(run.c, run.p, run.invIdx, run.reSlot, q); UI.close(); toast(`${run.p.name} beszerelve · ${pc}%`, q >= 0.6 ? 'good' : 'bad'); } }, run.custom ? 'Átadom a kocsit' : 'Kész')));
+        el('div', { class: 'row' }, el('button', { class: 'btn primary', onclick: () => { if (run.custom) { UI.close(); run.custom.onDone(q); return; } this.apply(run.c, run.p, run.invIdx, run.reSlot, q); UI.close(); if (!GarageWalk.install(run.c, run.p, q, run.reSlot)) toast(`${run.p.name} beszerelve · ${pc}%`, q >= 0.6 ? 'good' : 'bad'); } }, run.custom ? 'Átadom a kocsit' : 'Kész')));
       return;
     }
     s.append(el('div', { class: 'inst-step' }, `${run.i + 1}. lépés · ${st.name}`), el('div', { class: 'muted', style: 'font-size:13.5px;line-height:1.4' }, st.status()));

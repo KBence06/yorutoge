@@ -294,7 +294,7 @@ class RivalCar {
   constructor(rv, T, s0, lat0, grip) {
     this.rv = rv; this.T = T; this.s = s0; this.lat = lat0; this.v = 0; this.t = 0; this.idx = Math.floor(s0);
     const M = CARS[rv.car];
-    this.mass = M.mass + 75; this.mu = M.mu * rv.skill * (grip || 1); this.P = rv.ps * 735.5 * 0.84;
+    this.mass = M.mass + 75; this.mu = M.mu * rv.skill * (grip || 1); this.P = rv.ps * 735.5 * 0.84; this.grip = grip || 1;
     this.cd = M.cd * M.area; this.layout = M.layout;
     const N = T.N; this.line = new Float32Array(N); this.vmax = new Float32Array(N); this.pace = new Float32Array(N).fill(1);
     for (let i = 0; i < N; i++) {
@@ -329,6 +329,13 @@ class RivalCar {
     const T = this.T; this.t += dt;
     if (this.t < this.react) { this.braking = true; return; }
     const i = clamp(Math.floor(this.s), 0, T.N - 2);
+    if (T.tg && T.tg.drag) { // a straight sprint: hold the lane, launch on the tyres' limit, lift after the line
+      const M = CARS[this.rv.car], grip = M.mu * (this.grip || 1) * (this.rv.launch || 1) * G * (this.layout === 'AWD' ? 0.54 : this.layout === 'FF' ? 0.36 : this.layout === 'MR' ? 0.46 : 0.34);
+      const past = this.s > T.finish + 2;
+      const acc = Math.min(grip, this.P * 0.93 / (this.mass * Math.max(this.v, 3))) - (0.5 * 1.2 * this.cd * this.v * this.v) / this.mass;
+      if (past) { this.v = Math.max(0, this.v - 7.5 * dt); this.braking = true; } else { this.v += Math.max(0, acc) * dt; this.braking = false; }
+      this.s = Math.min(T.N - 3, this.s + this.v * dt); this.idx = Math.floor(this.s); this.place(); return;
+    }
     let target = this.vmax[i] * this.pace[i] * band;
     const ds = player.s - this.s, dl = player.lat - this.lat;
     let latT = this.line[i];

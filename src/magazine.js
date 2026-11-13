@@ -7,7 +7,8 @@ const MAG = {
     futomu: { color: '#1f7a4a', page: 44, lead: 'Lejjebb, keményebben, okosabban. A hegyen a futómű nyer, nem a motor.' },
     fek: { color: '#6a2a8a', page: 56, lead: 'Tíz hajtű egy lejtőn: ott derül ki, ki spórolt a fékbetéten. És a gumi az egyetlen, ami a földhöz ér.' },
     karosszeria: { color: '#17151a', page: 66, lead: 'Minden kiló számít. Ami nem kell, az megy. Ami kell, az legyen erős.' },
-    kulso: { color: '#c2185b', page: 72, lead: 'Az első kör a hegyen a szemnek szól. Felni, szárny, neon, sárga lámpa. Fényezés és fólia a festőműhelyben.' }
+    kulso: { color: '#c2185b', page: 72, lead: 'Az első kör a hegyen a szemnek szól. Felni, szárny, neon, sárga lámpa. Fényezés és fólia a festőműhelyben.' },
+    aero: { color: '#f07a1a', page: 84, lead: 'Deppa, takeyari, works sárvédő: a kaido racerek a nyolcvanas évek versenyautóit vitték az utcára. Mi csak lefényképeztük.' }
   },
   ads: {
     motor: { brand: 'KAMINARI WORKS', jp: 'カミナリワークス', slogan: 'A szikra nálunk kezdődik.', bg: '#111', fg: '#ffd400', mark: 'bolt' },
@@ -16,10 +17,11 @@ const MAG = {
     futomu: { brand: 'YAMAKAZE', jp: '山風', slogan: 'Lejjebb. Keményebben. Gyorsabban.', bg: '#1f7a4a', fg: '#f6f3e6', mark: 'wave' },
     fek: { brand: 'MICHIRU TYRE', jp: 'ミチル', slogan: 'Az egyetlen, ami a földhöz ér.', bg: '#ece7da', fg: '#17151a', mark: 'tyre' },
     karosszeria: { brand: 'RONIN GARAGE', jp: '浪人', slogan: 'Gazda nélkül, szabály nélkül.', bg: '#17151a', fg: '#e9e4d6', mark: 'brush' },
-    kulso: { brand: 'RAYS OF TSUKI', jp: '月光ホイール', slogan: 'Kovácsolva, holdfénynél.', bg: '#0e1430', fg: '#e8d7a0', mark: 'tyre' }
+    kulso: { brand: 'RAYS OF TSUKI', jp: '月光ホイール', slogan: 'Kovácsolva, holdfénynél.', bg: '#0e1430', fg: '#e8d7a0', mark: 'tyre' },
+    aero: { brand: 'BŌSŌ STYLE', jp: '暴走スタイル', slogan: 'Túl hangos? Akkor jó.', bg: '#f07a1a', fg: '#17151a', mark: 'bolt' }
   },
   pick: { exhaust1: 1, inj1: 1, lsd15: 1, coil1: 1, tire1: 1, strip1: 1, wheel3: 1, lights1: 1 },
-  fresh: { turbo28: 1, tire2: 1, wheel2: 1, ecu1: 1, neon1: 1, flares1: 1, wheel5: 1 }
+  fresh: { turbo28: 1, tire2: 1, wheel2: 1, ecu1: 1, neon1: 1, flares1: 1, wheel5: 1, wing5: 1, pipes1: 1, bumper2: 1, wheel7: 1, flares2: 1, intneon1: 1 }
 };
 
 // What the part would do to *your* car, measured like the editors would.
@@ -48,7 +50,7 @@ function partEffect(c, p) {
   if (sp.curve.minMargin < -3) warn = 'Gyári ECU-val tönkreteszi a motort!';
   else if (sp.curve.knockAny && !base.curve.knockAny) warn = 'Kopogni fog. ECU-val vissza kell hangolni.';
   else if (sp.curve.maxDuty > 1 && base.curve.maxDuty <= 1) warn = `Kevés lesz az üzemanyag (${fuelBottleneck(t)}).`;
-  if (!lines.length) lines.push(['wheels', 'hood', 'wing', 'kit', 'flares', 'lights', 'tail', 'tint', 'banner', 'neon'].includes(p.slot) ? 'stílus, nem idő' : 'nincs mérhető változás');
+  if (!lines.length) lines.push((CATS.find(c => c.id === 'kulso').slots.concat(CATS.find(c => c.id === 'aero').slots)).includes(p.slot) ? 'stílus, nem idő' : 'nincs mérhető változás');
   return { lines, warn };
 }
 

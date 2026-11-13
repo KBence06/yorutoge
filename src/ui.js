@@ -5,6 +5,7 @@ const UI = {
     $$('#nav button').forEach(b => b.addEventListener('click', () => this.show(b.dataset.scr)));
     $('#btnSleep').addEventListener('click', () => this.sleep());
     $('#btnDecor').addEventListener('click', () => this.toggleDecor());
+    $('#btnWalk').addEventListener('click', () => { Audio2.init(); GarageWalk.open(); });
     $('#btnSettings').addEventListener('click', () => this.settings());
     $('#btnPrevCar').addEventListener('click', () => this.switchCar(-1));
     $('#btnNextCar').addEventListener('click', () => this.switchCar(1));
@@ -108,6 +109,11 @@ const UI = {
         tog('abs', 'Blokkolásgátló', 'Fékezéskor nem állnak le a kerekek, kormányozható marad az autó.'),
         tog('assist', 'Ellenkormány-segéd', 'Csúszásnál visszakormányoz helyetted, és visszaveszi a gázt.'),
         tog('tcs', 'Kipörgésgátló', 'Elveszi a gázt, ha a hajtott kerék kipörög. A korabeli autókban nem volt.'),
+        el('div', { class: 'item' }, el('div', null, el('div', { class: 't' }, 'Rádió'), el('div', { class: 'muted', style: 'font-size:12.5px' }, 'Négy adó, mind a böngészőben szól. A garázsban a magnóra koppintva is válthatsz.')),
+          el('div', { class: 'row', style: 'grid-column:1/-1' }, ...Music.STATIONS.map(m => el('button', { class: 'chip', 'aria-pressed': String(Music.station().id === m.id), onclick: () => { Audio2.init(); Music.set(m.id); this.settings(); } }, m.id === 'off' ? 'Ki' : m.name.split(' · ')[1])))),
+        el('div', { class: 'item' }, el('div', { class: 'slider', style: 'margin:0' }, el('label', { for: 'set-mvol' }, 'Zene hangereje'), el('output', null, Math.round(Music.vol() * 100) + '%'),
+          el('input', { type: 'range', id: 'set-mvol', min: 0, max: 1, step: 0.05, value: Music.vol(), oninput: (e) => { Audio2.init(); Music.setVol(parseFloat(e.target.value)); e.target.previousSibling.textContent = Math.round(Music.vol() * 100) + '%'; save(); } }))),
+        sel('instAnim', 'Beszerelés filmje', [[true, 'Be'], [false, 'Ki']], 'Szerelés után a garázsban megnézed, ahogy az alkatrész a helyére kerül.'),
         sel('gfx', 'Grafika', [['low', 'Retró'], ['mid', 'Közepes'], ['high', 'Éles']]),
         sel('cam', 'Kamera', [['chase', 'Követő'], ['near', 'Közeli'], ['hood', 'Motorháztető']]),
         sel('mirror', 'Visszapillantó tükör', [[true, 'Be'], [false, 'Ki']], 'A képernyő tetején mutatja, ki jön mögötted. Gyengébb telefonon kikapcsolva folyékonyabb.')),
@@ -394,8 +400,30 @@ const UI = {
     wrap.append(el('div', { class: 'panel meet-cta' },
       el('div', null, el('div', { class: 'eyebrow' }, 'Gyülekező · 夜の集会'), el('h3', { style: 'margin:2px 0 4px' }, 'A felső parkoló'),
         el('p', { class: 'muted', style: 'margin:0' }, left ? `Ma éjjel ${left} autó áll a pihenőben, mind keres valakit egy körre, tétre. Gorō bácsi is ott van a használt alkatrészekkel.` : 'Ma éjjel már mindenkivel mentél egy kört. Holnap újak jönnek.')),
-      el('button', { class: 'btn primary', onclick: () => Meet.open() }, 'Kimegyek a pihenőbe')));
+      el('button', { class: 'btn primary', onclick: () => { Audio2.init(); if (!PA.open()) Meet.open(); } }, 'Kimegyek a pihenőbe')));
+    // the harbour straight
+    const dz = el('div', { class: 'panel touge dragcard' }), dart = el('div', { class: 'art' }, el('canvas'), el('div', { class: 'kanji' }, DRAG.jp));
+    const dbody = el('div', { class: 'body' },
+      el('div', null, el('div', { class: 'eyebrow' }, 'Zero-yon · 402 m állórajt'), el('h3', { style: 'margin:2px 0 0' }, DRAG.name)),
+      el('div', { class: 'muted' }, 'A konténerkikötő mögötti egyenes: két sáv, négyszáz méter. Itt nem a kanyar dönt, hanem a rajt, a váltás és a lóerő. A Midnight Loop tagjai minden éjjel itt állnak.'),
+      el('div', { class: 'row' }, el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(DRAG, null) }, 'Próbafutam'), el('span', { class: 'muted num' }, S.best.wangan ? `Legjobb: ${S.best.wangan.toFixed(2)} s` : 'Még nincs mért időd')));
+    for (const rv of DRAG.rivals) {
+      const beat = S.wins[rv.id], rl = S.rep < rv.reqRep;
+      dbody.append(el('div', { class: 'rival' },
+        el('div', null, el('div', { class: 't', style: 'font-weight:700' }, `${rv.name} `, el('span', { class: 'muted', style: 'font-weight:400' }, `· ${rv.team}`)),
+          el('div', { class: 'muted', style: 'font-size:12.5px' }, `${CARS[rv.car].name} · kb. ${rv.ps} LE · ${beat ? 'legyőzve, visszavágó ' + fmtY(Math.round(rv.prize * 0.3)) : 'tét ' + fmtY(rv.prize)}`)),
+        beat ? el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(DRAG, rv) }, 'Visszavágó') : rl ? el('span', { class: 'tag' }, `${rv.reqRep} rep`) : el('button', { class: 'btn small primary', disabled: !!ready, onclick: () => Race.start(DRAG, rv) }, 'Kihívás'),
+        el('div', { class: 'q' }, `„${rv.line}”`)));
+    }
+    dz.append(dart, dbody);
+    requestAnimationFrame(() => drawDragArt(dart.querySelector('canvas')));
+    // online
+    wrap.append(el('div', { class: 'panel meet-cta' },
+      el('div', null, el('div', { class: 'eyebrow' }, 'Online · 対戦'), el('h3', { style: 'margin:2px 0 4px' }, 'Verseny egy haverral'),
+        el('p', { class: 'muted', style: 'margin:0' }, Net.available() ? 'Nyiss egy szobát, küldd át a négyjegyű kódot, és mehettek egymás ellen a hegyen vagy az egyenesen, mindenki a saját autójával.' : 'Az online verseny a webes változatban érhető el (a Netlify-oldalon). Itt, a Claude-on belül a böngésző nem enged közvetlen kapcsolatot két játékos között.')),
+      el('button', { class: 'btn primary', disabled: !Net.available() || !!ready, onclick: () => Net.lobby() }, 'Szoba')));
     const g = el('div', { class: 'grid2' });
+    g.append(dz);
     TOUGES.forEach((tg0, ti) => {
       const locked = S.rep < tg0.reqRep;
       const rev = !!(S.dirPref && S.dirPref[tg0.id]), tg = tougeDir(tg0, rev);
@@ -404,14 +432,14 @@ const UI = {
       const art = el('div', { class: 'art' }, el('canvas'), el('div', { class: 'kanji' }, tg.jp));
       const setDir = (r) => { S.dirPref = S.dirPref || {}; S.dirPref[tg0.id] = r; save(); this.renderTouge(); };
       const dirSeg = el('div', { class: 'seg dirseg', role: 'group', 'aria-label': 'Irány' },
-        el('button', { class: 'chip', 'aria-pressed': String(!rev), onclick: () => setDir(false) }, `${tg0.dir === 'down' ? '↓ Völgymenet' : '↑ Hegymenet'}`),
-        el('button', { class: 'chip', 'aria-pressed': String(rev), onclick: () => setDir(true) }, `${tg0.dir === 'down' ? '↑ Hegymenet' : '↓ Völgymenet'}`));
+        el('button', { class: 'chip', 'aria-pressed': String(!rev), onclick: () => setDir(false) }, `${tg0.dir === 'down' ? '↓ Downhill' : '↑ Hillclimb'}`),
+        el('button', { class: 'chip', 'aria-pressed': String(rev), onclick: () => setDir(true) }, `${tg0.dir === 'down' ? '↑ Hillclimb' : '↓ Downhill'}`));
       const body = el('div', { class: 'body' },
         el('div', null, el('div', { class: 'eyebrow' }, `${dirName(tg)[0].toUpperCase() + dirName(tg).slice(1)} · ${(trackLength(tg) / 1000).toFixed(1)} km`), el('h3', { style: 'margin:2px 0 0' }, tg.name)),
         el('div', { class: 'muted' }, locked ? `Zárva. ${tg.reqRep} hírnév kell hozzá (most ${S.rep}).` : rev ? 'Fordítva: a kanyarok ugyanazok, de minden fékpont máshol van. A helyiek nem ezt az irányt ismerik.' : tg.desc));
       if (!locked) {
         body.append(dirSeg);
-        body.append(el('div', { class: 'row' }, el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(tg, null) }, 'Időmérő edzés'), el('span', { class: 'muted num' }, best ? `Legjobb: ${fmtTime(best)}` : 'Még nincs mért köröd')));
+        body.append(el('div', { class: 'row' }, el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(tg, null) }, 'Time attack'), el('span', { class: 'muted num' }, best ? `Legjobb: ${fmtTime(best)}` : 'Még nincs mért köröd'), (S.medals || {})[trackKey(tg)] ? el('span', { class: 'medal sm m-' + S.medals[trackKey(tg)] + ' got' }, el('b', null, TA_NAME[S.medals[trackKey(tg)]])) : null));
         const dbest = (S.driftBest || {})[trackKey(tg)];
         body.append(el('div', { class: 'row' }, el('button', { class: 'btn small', disabled: !!ready, onclick: () => Race.start(tg, null, 'drift') }, 'Drift edzés'), el('span', { class: 'muted num' }, dbest ? `Legjobb: ${fmtPts(dbest)} pont` : 'Még nincs driftpontod')));
         for (const rv of tg.rivals) {
@@ -604,3 +632,14 @@ const SaveXfer = {
       } }, 'Igen, betöltöm'), el('button', { class: 'btn', onclick: () => this.importUI() }, 'Mégse'))]);
   }
 };
+
+function drawDragArt(cv) {
+  if (!cv) return; const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); if (!r.width) return;
+  cv.width = r.width * d; cv.height = r.height * d; const g = cv.getContext('2d'); g.scale(d, d); const W = r.width, H = r.height;
+  const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#0a0d1c'); sky.addColorStop(0.55, '#2a1f33'); sky.addColorStop(0.56, '#17181c'); sky.addColorStop(1, '#0b0b0d'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#0b0d14'; for (let i = 0; i < 4; i++) { const x = W * (0.08 + i * 0.27), h = H * (0.3 + (i % 2) * 0.08); g.fillRect(x, H * 0.55 - h, 4, h); g.fillRect(x + 26, H * 0.55 - h, 4, h); g.fillRect(x - 30, H * 0.55 - h, 90, 6); }
+  const cols = ['#6a2019', '#173c69', '#23512c', '#7c5613']; for (let i = 0; i < 14; i++) { g.fillStyle = cols[i % 4]; const side = i % 2, k = Math.floor(i / 2), w = 34 - k * 3; g.fillRect(side ? W * 0.5 + 40 + k * 26 : W * 0.5 - 40 - k * 26 - w, H * 0.56 - 12 - (i % 3) * 3, w, 14 + (i % 3) * 3); }
+  g.fillStyle = '#2a2a2d'; g.beginPath(); g.moveTo(W * 0.5 - 6, H * 0.56); g.lineTo(W * 0.5 + 6, H * 0.56); g.lineTo(W * 0.86, H); g.lineTo(W * 0.14, H); g.fill();
+  g.strokeStyle = '#e09a2a'; g.lineWidth = 2; g.setLineDash([10, 8]); g.beginPath(); g.moveTo(W * 0.5, H * 0.58); g.lineTo(W * 0.5, H); g.stroke(); g.setLineDash([]);
+  for (let i = 0; i < 5; i++) { const t = i / 5, y = H * (0.58 + t * t * 0.4), x = 20 + t * W * 0.3; for (const s of [-1, 1]) { const gr = g.createRadialGradient(W / 2 + s * x, y - 20 - t * 30, 0, W / 2 + s * x, y - 20 - t * 30, 12 + t * 16); gr.addColorStop(0, 'rgba(255,170,80,0.9)'); gr.addColorStop(1, 'rgba(255,170,80,0)'); g.fillStyle = gr; g.fillRect(W / 2 + s * x - 30, y - 60 - t * 30, 60, 60); } }
+}

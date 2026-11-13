@@ -42,6 +42,7 @@ const Meet = {
       if (rnd() < lvl * 0.7) parts.ecu = pick(bySlot('ecu'));
       if (rnd() < lvl * 0.6) parts.lsd = pick(bySlot('lsd'));
       if (rnd() < 0.5) parts.tires = pick(bySlot('tires'));
+      for (const [slot, ch] of [['bumper', 0.3], ['pipes', 0.22], ['canards', 0.2], ['diffuser', 0.2], ['mirrors', 0.25], ['louver', 0.15], ['tirelet', 0.3], ['intneon', 0.2], ['towhook', 0.3], ['decal', 0.3]]) if (rnd() < ch * (0.5 + lvl)) parts[slot] = pick(bySlot(slot));
       for (const [slot, id] of Object.entries(parts)) if (id && !partAllowed(PART[id], c)) c.parts[slot] = { id, q: 1 };
       c.look = { finish: pick(['gloss', 'gloss', 'metal', 'metal', 'pearl', 'matte']), livery: rnd() < 0.45 ? pick(Object.keys(LIVERIES)) : null, col2: pick(PAINTS)[0], neon: pick(NEONS)[0] };
       const stock = stockPeakPS(model).ps, boosted = !!CARS[model].engine.turbo, ps = Math.round(stock * (1.02 + lvl * (boosted ? 0.7 : 0.3) + rnd() * 0.08));
