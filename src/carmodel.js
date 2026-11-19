@@ -3,9 +3,10 @@
 // (the same one the garage draws), the plan view rounds the corners, the sides bulge slightly, the
 // greenhouse leans in, and the wheel arches are real openings with a dark liner behind them.
 const CarModel = {
-  envMap: null, pmremEnv: null, wheelTex: {}, plateTex: {}, lensTex: {},
+  envMap: null, pmremEnv: null, envs: {}, wheelTex: {}, plateTex: {}, lensTex: {},
   // a small night scene blurred into a reflection map: sky, horizon glow, a row of sodium lamps
-  env(track, renderer) {
+  env(track, renderer, kind) {
+    if (kind === 'garage') return this.envGarage(track, renderer);
     if (this.pmremEnv) return this.pmremEnv;
     if (renderer && THREE.PMREMGenerator) {
       try {
@@ -27,6 +28,24 @@ const CarModel = {
       } catch (e) { /* fall back below */ }
     }
     return this.envCube(track);
+  },
+  // inside the garage: a dark room with two long fluorescent tubes overhead and the lit shutter, so the paint shows those clean reflection lines
+  envGarage(track, renderer) {
+    if (this.envs.garage) return this.envs.garage;
+    if (!renderer || !THREE.PMREMGenerator) return this.envCube(track);
+    try {
+      const es = new THREE.Scene(), sg = new THREE.SphereGeometry(50, 32, 16), cols = [], p = sg.attributes.position;
+      for (let i = 0; i < p.count; i++) { const y = p.getY(i) / 50; const v = y > 0.05 ? lerp(0.05, 0.025, y) : y > -0.05 ? 0.07 : 0.045; cols.push(v, v * 1.02, v * 1.1); }
+      sg.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      es.add(new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+      const tube = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.6, 3.7, 3.9) }), tg = new THREE.BoxGeometry(2.4, 0.4, 38), door = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.32, 0.33, 0.36) }), dg = new THREE.PlaneGeometry(40, 22);
+      for (const x of [-9, 9]) { const t = new THREE.Mesh(tg, tube); t.position.set(x, 30, 0); es.add(t); }
+      const d = new THREE.Mesh(dg, door); d.position.set(0, 6, 46); d.rotation.y = Math.PI; es.add(d);
+      const pan = new THREE.Mesh(new THREE.PlaneGeometry(14, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.5, 1.3) })); pan.position.set(-44, 10, -10); pan.rotation.y = Math.PI / 2; es.add(pan);
+      const pm = new THREE.PMREMGenerator(renderer), rt = pm.fromScene(es, 0.02);
+      pm.dispose(); sg.dispose(); tg.dispose(); dg.dispose(); tube.dispose(); door.dispose(); pan.geometry.dispose(); pan.material.dispose();
+      track.push(rt); return (this.envs.garage = rt.texture);
+    } catch (e) { return this.envCube(track); }
   },
   envCube(track) { // plain cube map: works with Phong (the PMREM format does not)
     if (this.envMap) return this.envMap;
@@ -131,7 +150,7 @@ const CarModel = {
     word('YORU', 0); word('RS-2', Math.PI);
     const t = new THREE.CanvasTexture(cv); track.push(t); this.letTex = t; return t;
   },
-  reset() { this.letTex = null; this.envMap = null; this.pmremEnv = null; this.wheelTex = {}; this.plateTex = {}; this.lensTex = {}; },
+  reset() { this.letTex = null; this.envMap = null; this.pmremEnv = null; this.envs = {}; this.wheelTex = {}; this.plateTex = {}; this.lensTex = {}; },
 
   // ------------------------------------------------------------------ body surface
   sampler(sh, flare) {
@@ -245,7 +264,7 @@ const CarModel = {
     vis = vis || {};
     const sh = carShape(model, vis.lower), M = sh.M, D = sh.D, L = sh.L, W = sh.W;
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
-    const env = ghost ? null : cheap ? this.envCube(track) : this.env(track, opts.renderer || (typeof Race !== 'undefined' && Race.renderer));
+    const env = ghost ? null : cheap ? this.envCube(track) : this.env(track, opts.renderer || (typeof Race !== 'undefined' && Race.renderer), opts.envKind);
     const mk = (m) => { if (ghost) { m.transparent = true; m.opacity = 0.32; m.depthWrite = false; } track.push(m); return m; };
     const finish = vis.finish || 'gloss', flare = Math.max(D.flare || 0, vis.flares === 'works' ? 0.115 : vis.flares ? 0.07 : 0);
     // paint: clear-coated PBR on the normal and high settings, cheaper Phong on retro
@@ -287,7 +306,7 @@ const CarModel = {
     };
     const glassM = mk(cheap ? new THREE.MeshPhongMaterial({ color: vis.tint ? 0x030406 : 0x0a0d14, specular: 0xaabbcc, shininess: 140, envMap: env, combine: THREE.AddOperation, reflectivity: 0.55 })
       : new THREE.MeshStandardMaterial({ color: vis.tint ? 0x020304 : 0x0a0f18, roughness: 0.04, metalness: 0.15, envMap: env, envMapIntensity: vis.tint ? 1.4 : 1.7, depthWrite: true }));
-    const seeIn = !cheap && !ghost && (opts.cabin || S.settings.gfx === 'high'); if (seeIn) { glassM.transparent = true; glassM.opacity = vis.tint ? 0.93 : 0.74; glassM.depthWrite = false; } if (seeIn) { shellM.side = THREE.DoubleSide; glassM.side = THREE.DoubleSide; }
+    const seeIn = !cheap && !ghost && (opts.cabin || gfxLv() >= 2); if (seeIn) { glassM.transparent = true; glassM.opacity = vis.tint ? 0.93 : 0.74; glassM.depthWrite = false; } if (seeIn) { shellM.side = THREE.DoubleSide; glassM.side = THREE.DoubleSide; }
     const darkM = mk(new THREE.MeshLambertMaterial({ color: 0x0a0a0c }));
     const trimM = mk(std({ color: 0x141518, roughness: 0.45, metalness: 0.1, envMap: env, envMapIntensity: 0.6 }));
     const carbonM = mk(std({ color: 0x1c1d22, roughness: 0.25, metalness: 0.3, envMap: env, envMapIntensity: 1 }));

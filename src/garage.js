@@ -425,7 +425,31 @@ const Garage = {
     // car
     const c = car();
     const len = portrait ? W * 0.86 : Math.min(W * 0.62, (H - 40) * 1.3, 760 * u + 120);
-    drawCarSide(ctx, c, W / 2, floorY + (H - floorY) * (portrait ? 0.36 : 0.52), len);
+    const gy = floorY + (H - floorY) * (portrait ? 0.36 : 0.52);
+    // the car mirrored in the floor, fading out with distance (stronger on epoxy and tiles)
+    const rk = { fl_epoxy: 0.32, fl_checker: 0.24 }[D.floor] || 0.13;
+    if (gfxLv() >= 1) {
+      const rc = this.rcv || (this.rcv = document.createElement('canvas')), rx = rc.getContext('2d');
+      if (rc.width !== cv.width || rc.height !== cv.height) { rc.width = cv.width; rc.height = cv.height; }
+      rx.setTransform(1, 0, 0, 1, 0, 0); rx.clearRect(0, 0, rc.width, rc.height); rx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      rx.save(); rx.translate(0, 2 * gy); rx.scale(1, -1); drawCarSide(rx, c, W / 2, gy, len); rx.restore();
+      const fade = rx.createLinearGradient(0, gy, 0, gy + len * 0.32); fade.addColorStop(0, 'rgba(0,0,0,1)'); fade.addColorStop(1, 'rgba(0,0,0,0)');
+      rx.globalCompositeOperation = 'destination-in'; rx.fillStyle = fade; rx.fillRect(0, gy - 2, W, H - gy + 2); rx.globalCompositeOperation = 'source-over';
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = rk; ctx.drawImage(rc, 0, 0); ctx.restore();
+    }
+    drawCarSide(ctx, c, W / 2, gy, len);
+    // light falling from the tubes, with a little dust drifting through it
+    if (gfxLv() >= 1) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const tx of [0.3, 0.7]) {
+        const x0 = W * tx, top = 16, bot = floorY + (H - floorY) * 0.7, g2 = ctx.createLinearGradient(0, top, 0, bot);
+        g2.addColorStop(0, hexA(light, 0.13 * flick)); g2.addColorStop(1, hexA(light, 0));
+        ctx.fillStyle = g2; ctx.beginPath(); ctx.moveTo(x0 - 70 * u, top); ctx.lineTo(x0 + 70 * u, top); ctx.lineTo(x0 + 260 * u + 40, bot); ctx.lineTo(x0 - 260 * u - 40, bot); ctx.closePath(); ctx.fill();
+      }
+      const motes = this.motes || (this.motes = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), s: 0.4 + Math.random() * 1.2, v: 0.2 + Math.random() * 0.6, p: Math.random() * 7 })));
+      for (const m of motes) { const tt = t / 1000; const x = (m.x + Math.sin(tt * 0.13 * m.v + m.p) * 0.03) * W, y = ((m.y + tt * 0.004 * m.v) % 1) * floorY; ctx.fillStyle = hexA(light, 0.25 + 0.2 * Math.sin(tt * m.v * 2 + m.p)); ctx.beginPath(); ctx.arc(x, y, m.s * (0.6 + u), 0, 7); ctx.fill(); }
+      ctx.restore();
+    }
     // reflection of tubes on the car roof area
     if (this.decorMode) {
       ctx.save(); ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeStyle = '#4ee6d4';

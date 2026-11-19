@@ -114,13 +114,13 @@ const UI = {
         el('div', { class: 'item' }, el('div', { class: 'slider', style: 'margin:0' }, el('label', { for: 'set-mvol' }, 'Zene hangereje'), el('output', null, Math.round(Music.vol() * 100) + '%'),
           el('input', { type: 'range', id: 'set-mvol', min: 0, max: 1, step: 0.05, value: Music.vol(), oninput: (e) => { Audio2.init(); Music.setVol(parseFloat(e.target.value)); e.target.previousSibling.textContent = Math.round(Music.vol() * 100) + '%'; save(); } }))),
         sel('instAnim', 'Beszerelés filmje', [[true, 'Be'], [false, 'Ki']], 'Szerelés után a garázsban megnézed, ahogy az alkatrész a helyére kerül.'),
-        sel('gfx', 'Grafika', [['low', 'Retró'], ['mid', 'Közepes'], ['high', 'Éles']]),
+        sel('gfx', 'Grafika', [['low', 'Retró'], ['mid', 'Közepes'], ['high', 'Éles'], ['ultra', 'Ultra']], { low: 'Pixeles, régi videós kép. A leggyorsabb.', mid: 'Fényudvar a lámpák körül, élsimítás. A legtöbb telefonon folyékony.', high: 'Filmes kép: erősebb fényudvar, tükröződések, mozgás közben sebességelmosás.', ultra: 'Minden effekt, árnyékok, tükröződő padló, részletesebb modellek. Erős telefon kell hozzá.' }[st.gfx]),
         sel('cam', 'Kamera', [['chase', 'Követő'], ['near', 'Közeli'], ['hood', 'Motorháztető']]),
         sel('mirror', 'Visszapillantó tükör', [[true, 'Be'], [false, 'Ki']], 'A képernyő tetején mutatja, ki jön mögötted. Gyengébb telefonon kikapcsolva folyékonyabb.')),
       el('div', { class: 'panel', style: 'margin:12px 0' }, el('h3', { style: 'margin:0 0 4px' }, 'Mentés átvitele'),
         el('p', { class: 'muted', style: 'margin:0 0 10px;font-size:12.5px' }, 'A Claude-ban futó és a telefonra telepített játék külön menti az állást. Kóddal vagy fájllal átviheted a garázsodat egyikből a másikba.'),
         el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => SaveXfer.exportUI() }, 'Mentés kimentése'), el('button', { class: 'btn small', onclick: () => SaveXfer.importUI() }, 'Mentés betöltése'))),
-      el('div', { class: 'row' }, el('button', { class: 'btn danger small', onclick: () => this.confirmReset() }, 'Új játék'))]);
+      el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => Dev.open() }, 'Fejlesztői menü'), el('button', { class: 'btn danger small', onclick: () => this.confirmReset() }, 'Új játék'))]);
     $('#sheet').scrollTop = keep;
   },
   confirmReset() {

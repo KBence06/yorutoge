@@ -573,3 +573,9 @@ h3 { margin: 0 0 8px; font-family: var(--f-disp); font-weight: 700; font-size: 1
 .pedal.nos { width: 62px; height: 62px; border-radius: 50%; font-size: 15px; border-color: rgba(74,123,255,.8); background: linear-gradient(to top, rgba(47,123,255,.5) var(--n, 100%), rgba(10,12,18,.42) var(--n, 100%)); }
 .pedal.nos.fire { box-shadow: 0 0 18px 4px rgba(90,150,255,.8); color: #fff; } .pedal.nos.empty { opacity: .35; }
 .netcode.pub b { letter-spacing: .04em; padding-left: 0; }
+
+/* dev menu */
+.devsec { margin: 14px 0 6px; color: var(--neon); }
+.devwrap .items { margin: 0; }
+.devcars .chip { font-size: 12.5px; }
+.devfps { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 2px); z-index: 9999; pointer-events: none; font: 12px/1.3 ui-monospace, monospace; color: #c7ff3d; background: rgba(0,0,0,.62); padding: 2px 8px; border-radius: 6px; white-space: nowrap; }

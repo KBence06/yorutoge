@@ -9,6 +9,7 @@ const GarageWalk = {
   def(inst) {
     const X = 4.6, Z0 = -5.2, Z1 = 5.6;
     return {
+      look: { thr: 0.95, thrH: 1.45, knee: 0.3, bloom: 0.7 },
       title: inst ? 'Beszerelés' : 'Garázs', sub: inst ? inst.p.name : CARS[car().model].name,
       spawn: { x: 2.7, z: 3.3, yaw: Math.atan2(-2.7, -3.0), pitch: -0.12 }, bounds: { x0: -X, x1: X, z0: Z0, z1: Z1 },
       build: (W) => this.build(W, inst, X, Z0, Z1),
@@ -29,7 +30,7 @@ const GarageWalk = {
     const st = this.state = { hood: 0, hoodT: 0, lift: 0, wheelOff: 0, rpm: 0, blip: 0 };
     sc.background = new THREE.Color(0x06070a); sc.fog = new THREE.Fog(0x06070a, 16, 44);
     sc.add(new THREE.HemisphereLight(lc.clone().lerp(new THREE.Color(0xffffff), 0.45), 0x241d16, 0.42)); sc.add(new THREE.AmbientLight(0x30343c, 0.3));
-    const tubeM = new THREE.MeshBasicMaterial({ color: lc.clone().lerp(new THREE.Color(0xffffff), 0.6) });
+    const tubeM = new THREE.MeshBasicMaterial({ color: lc.clone().lerp(new THREE.Color(0xffffff), 0.6).multiplyScalar(2.6) });
     for (const z of [-1.9, 2.1]) { const pl = new THREE.PointLight(lightHex, 0.8, 17, 1.5); pl.position.set(0, 2.85, z); sc.add(pl); W.mesh(new THREE.BoxGeometry(1.9, 0.05, 0.13), tubeM, 0, H - 0.12, z); W.mesh(new THREE.BoxGeometry(2.05, 0.04, 0.22), new THREE.MeshLambertMaterial({ color: 0x2a2c30 }), 0, H - 0.07, z); }
     // ---- the room: block walls, the floor you picked, the shutter
     const wallT = (rx, ry) => W.canvasTex(256, 256, (g) => {
@@ -54,7 +55,8 @@ const GarageWalk = {
         if (D.floor !== 'fl_epoxy') { g.fillStyle = 'rgba(10,10,10,0.1)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 512, 8 + Math.random() * 18, 6 + Math.random() * 12, Math.random() * 3, 0, 7); g.fill(); } g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 2; g.strokeRect(0, 0, 512, 512); }
       }
     }, D.floor === 'fl_checker' ? [3, 3.5] : [2, 2.4]);
-    const fl = W.mesh(new THREE.PlaneGeometry(2 * X, Z1 - Z0), D.floor === 'fl_epoxy' ? new THREE.MeshPhongMaterial({ map: floorT, shininess: 70, specular: 0x555555 }) : new THREE.MeshLambertMaterial({ map: floorT }), 0, 0, (Z0 + Z1) / 2); fl.rotation.x = -Math.PI / 2;
+    const fl = W.mesh(new THREE.PlaneGeometry(2 * X, Z1 - Z0), gfxLv() >= 2 ? new THREE.MeshStandardMaterial({ map: floorT, color: D.floor === 'fl_checker' ? 0xd0d0d0 : 0x8c8c8c, roughness: D.floor === 'fl_epoxy' ? 0.3 : D.floor === 'fl_checker' ? 0.45 : 0.78, metalness: 0 }) : D.floor === 'fl_epoxy' ? new THREE.MeshPhongMaterial({ map: floorT, shininess: 70, specular: 0x555555 }) : new THREE.MeshLambertMaterial({ map: floorT }), 0, 0, (Z0 + Z1) / 2); fl.rotation.x = -Math.PI / 2;
+    W.reflect(fl, D.floor === 'fl_epoxy' ? 0.6 : D.floor === 'fl_checker' ? 0.42 : 0.3, D.floor === 'fl_epoxy' ? 1.2 : 2.4);
     const shutT = W.canvasTex(256, 256, (g) => { g.fillStyle = '#4a4f58'; g.fillRect(0, 0, 256, 256); for (let y = 0; y < 256; y += 14) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(0, y, 256, 3); g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(0, y + 3, 256, 2); } for (let x = 0; x < 256; x += 32) { g.fillStyle = '#d9a21b'; g.beginPath(); g.moveTo(x, 256); g.lineTo(x + 16, 238); g.lineTo(x + 32, 238); g.lineTo(x + 16, 256); g.fill(); } });
     W.board(shutT, 5.4, 2.75, 0, 1.375, Z1 - 0.02, Math.PI); for (const sx of [-1, 1]) W.mesh(new THREE.BoxGeometry(0.16, 2.9, 0.12), new THREE.MeshLambertMaterial({ color: 0x15171b }), sx * 2.78, 1.45, Z1 - 0.06); W.mesh(new THREE.BoxGeometry(5.7, 0.22, 0.2), new THREE.MeshLambertMaterial({ color: 0x15171b }), 0, 2.86, Z1 - 0.1);
     // ---- what you bought for it: posters, the neon, the shelf, the corners
@@ -97,8 +99,11 @@ const GarageWalk = {
     W.track.push(liftM);
     this.arms = []; for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const a = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.09), steel); a.position.set(sx * 0.92, 0.12, sz * 0.75); a.rotation.y = -sx * sz * 0.6; gear.add(a); this.arms.push(a); W.track.push(a.geometry); }
     // ---- the car (and, during an install, the car as it was a minute ago)
-    const c = inst ? inst.c : car(), opt = (cc) => ({ bay: true, plate: ['黒沢 330', '19-07'], turbo: !!cc.parts.turbo, bbk: !!cc.parts.brakes, strut: !!cc.parts.strut, intake: !!cc.parts.intake });
+    const c = inst ? inst.c : car(), opt = (cc) => ({ bay: true, envKind: 'garage', plate: ['黒沢 330', '19-07'], turbo: !!cc.parts.turbo, bbk: !!cc.parts.brakes, strut: !!cc.parts.strut, intake: !!cc.parts.intake });
     this.c = c; this.m = W.car(c, 0, 0, 0, opt(c)); this.mOld = null;
+    // Ultra: a real shadow from the tubes overhead
+    if (gfxLv() >= 3) { const sl = new THREE.SpotLight(lightHex, 0.7, 14, 1.05, 0.7, 1.3); sl.position.set(0.3, H - 0.15, 0.4); sl.target.position.set(0, 0, 0); sl.castShadow = true; sl.shadow.mapSize.set(1024, 1024); sl.shadow.bias = -0.0006; sl.shadow.radius = 5; sc.add(sl, sl.target); W.shadowLight = sl;
+      for (const mm of [this.m, this.mOld]) if (mm) mm.g.traverse(o => { if (o.isMesh && !o.material.transparent) o.castShadow = true; }); sc.traverse(o => { if (o.isMesh && o.geometry && o.geometry.type === 'PlaneGeometry' && Math.abs(o.rotation.x + Math.PI / 2) < 0.01) o.receiveShadow = true; }); }
     if (inst && !inst.reSlot) { const old = Object.assign({}, c, { parts: Object.assign({}, c.parts) }); delete old.parts[inst.p.slot]; this.mOld = W.car(old, 0, 0, 0, opt(old)); this.m.g.visible = false; }
     const sh = this.m.sh, cw = sh.W / 2, cl = sh.L / 2; W.collide(-cw - 0.05, cw + 0.05, -cl - 0.05, cl + 0.05);
     W.hotspot(0, 0.9, cl + 0.2, 2.3, () => st.hoodT > 0.5 ? 'Motorháztető le' : 'Motorháztető fel', () => this.toggleHood(W), () => !W.seat).dyn = true;

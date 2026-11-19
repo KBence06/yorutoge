@@ -4,6 +4,13 @@ Böngészős autós játék a 90-es évek japán touge-világából. Saját gar�
 saját kezű szerelés és tuning, dyno, éjszakai versenyek a hegyen, rendőrök, gyülekező és munkák.
 Telefonra készült (fekvő módban a verseny), de asztali böngészőben is fut.
 
+## Grafika és fejlesztői menü
+
+A Beállítások → Grafika alatt négy fokozat van: Retró, Közepes, Éles és Ultra. Közepestől felfelé
+utófeldolgozás fut (fényudvar, élsimítás, színkorrekció), Éles és Ultra fokozaton tükröző garázspadló is van,
+Ultrán árnyékok. A Beállítások alján a **Fejlesztői menü** csalásokat és tesztelőeszközöket ad
+(végtelen pénz, autók és alkatrészek, sérthetetlenség, időjárás, FPS-mérő).
+
 ## Hogyan kerül ki a netre
 
 A Netlify minden `main` ágra érkező feltöltés után magától lefuttatja a `bash build.sh netlify`

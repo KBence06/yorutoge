@@ -8,16 +8,8 @@ const PA = {
       build: (W) => this.build(W, R)
     });
   },
-  person(W, x, z, ry, shirt, smoke) {
-    const g = new THREE.Group(), dark = new THREE.MeshLambertMaterial({ color: 0x16171c }), top = new THREE.MeshLambertMaterial({ color: shirt }), skin = new THREE.MeshLambertMaterial({ color: 0xc9a183 });
-    const add = (geo, m, px, py, pz) => { const me = new THREE.Mesh(geo, m); me.position.set(px, py, pz); g.add(me); W.track.push(geo); return me; };
-    W.track.push(dark, top, skin);
-    for (const s of [-1, 1]) add(new THREE.CylinderGeometry(0.075, 0.065, 0.86, 8), dark, s * 0.1, 0.43, 0);
-    add(new THREE.CylinderGeometry(0.2, 0.17, 0.62, 10), top, 0, 1.17, 0); add(new THREE.SphereGeometry(0.115, 12, 10), skin, 0, 1.63, 0); add(new THREE.SphereGeometry(0.122, 12, 8, 0, 7, 0, 1.5), dark, 0, 1.65, -0.01);
-    for (const s of [-1, 1]) { const a = add(new THREE.CylinderGeometry(0.05, 0.045, 0.58, 8), top, s * 0.25, 1.17, 0.02); a.rotation.z = s * 0.12; }
-    if (smoke) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: W.glowTex(), color: 0xff7a30, blending: THREE.AdditiveBlending, depthWrite: false })); sp.scale.set(0.09, 0.09, 1); sp.position.set(0.27, 0.92, 0.1); g.add(sp); W.track.push(sp.material); W.tickers.push((dt, t) => { sp.material.opacity = 0.55 + 0.45 * Math.max(0, Math.sin(t * 0.9 + x)); }); }
-    g.position.set(x, 0, z); g.rotation.y = ry; W.scene.add(g); W.collide(x - 0.25, x + 0.25, z - 0.25, z + 0.25); return g;
-  },
+  // racers, friends and onlookers; seeded so tonight's crowd stays the same while you walk around
+  person(W, x, z, ry, spec, pose, o) { return Human.place(W, spec, x, z, ry, pose, o); },
   build(W, R) {
     const sc = W.scene, st = Meet.state(); sc.background = new THREE.Color(0x05060c); sc.fog = new THREE.Fog(0x05060c, 30, 120);
     sc.add(new THREE.HemisphereLight(0x2a3350, 0x15120e, 0.75)); sc.add(new THREE.AmbientLight(0x20222a, 0.6));
@@ -64,7 +56,11 @@ const PA = {
       const m = W.car({ model: rc.c.model, paint: rc.c.paint, vis: carVisual(rc.c) }, x, z, 0, { bay: i % 2 === 0, turbo: !!rc.c.parts.turbo || !!CARS[rc.c.model].engine.turbo, plate: ['群馬 5' + (10 + i * 7), `${30 + i * 13}-${10 + i * 21}`] });
       if (m.hood) m.hood.rotation.x = -0.95;
       const L = m.sh.L / 2, Wd = m.sh.W / 2; W.collide(x - Wd, x + Wd, z - L, z + L);
-      this.person(W, x + Wd + 0.55, z + L - 0.6, -0.6 - i * 0.3, shirts[i % shirts.length], i % 2 === 1);
+      const poses = ['crossed', 'smoke', 'pockets', 'phone', 'talk'], pose = poses[i % poses.length];
+      this.person(W, x + Wd + 0.55, z + L - 0.6, -0.6 - i * 0.3, Human.random(S.day * 31 + i * 7 + 3, { topCol: '#' + shirts[i % shirts.length].toString(16).padStart(6, '0') }), pose, { prop: pose === 'smoke' ? 'cig' : pose === 'phone' ? 'phone' : null });
+      // a friend with his head in the engine bay, or crouched at a wheel
+      if (m.hood && i < 3) this.person(W, x + 0.15, z + L + 0.42, Math.PI, Human.random(S.day * 17 + i * 5 + 11), 'lean', { still: gfxLv() < 2 });
+      else if (i === 3) this.person(W, x - Wd - 0.35, z + L * 0.55, Math.PI / 2, Human.random(S.day * 13 + 77, { top: 'coverall' }), 'squat', { still: gfxLv() < 2 });
       W.hotspot(x, 1, z + L + 0.5, 3.0, () => `${rc.name} · ${CARS[rc.c.model].name}`, () => Meet.card(rc, W), null).dyn = true;
     });
     // your own car, parked across two bays like you own the place
@@ -73,13 +69,19 @@ const PA = {
     // Gorō and his kei truck
     const van = W.car({ model: 'porter', paint: '#e9e6dc', vis: { wheel: 'stock' } }, -12.2, -4.8, 0.5, { plate: ['群馬 480', '55-01'] }); W.collide(-13.4, -11, -6.6, -3);
     const crateM = new THREE.MeshLambertMaterial({ color: 0x6a5234 }); for (const [dx, dz, s] of [[1.5, 0.6, 0.5], [2.1, 0.2, 0.42], [1.7, 1.3, 0.36]]) W.mesh(new THREE.BoxGeometry(s * 1.3, s, s), crateM, -12.2 + dx, s / 2, -4.8 + dz);
-    this.person(W, -10.1, -3.0, 0.9, 0x4a4f58, true);
+    this.person(W, -10.1, -3.0, 0.9, Human.random(480, { hair: 'buzz', hairCol: '#8d8a84', hat: null, top: 'coverall', topCol: '#5a5040', towel: true, glasses: false, mask: false, beard: true, female: false, h: 0.95, w: 1.1 }), 'smoke', { prop: 'cig' });
     const lamp = new THREE.PointLight(0xffe2b0, 0.9, 7, 1.8); lamp.position.set(-10.6, 1.4, -4); sc.add(lamp);
     W.hotspot(-10.6, 1, -3.9, 3.2, 'Gorō bácsi: használt alkatrészek', () => Meet.saleCard(W));
     // the style judge with a folding table
     const tblM = new THREE.MeshLambertMaterial({ color: 0xd8d2c2 }); W.mesh(new THREE.BoxGeometry(1.4, 0.05, 0.7), tblM, 0.5, 0.75, 6.4); for (const [dx, dz] of [[-0.6, -0.3], [0.6, -0.3], [-0.6, 0.3], [0.6, 0.3]]) W.mesh(new THREE.BoxGeometry(0.04, 0.75, 0.04), poleM, 0.5 + dx, 0.375, 6.4 + dz);
     W.mesh(new THREE.BoxGeometry(0.16, 0.24, 0.16), new THREE.MeshBasicMaterial({ color: 0xffd9a0 }), 0.9, 0.9, 6.4); const tl = new THREE.PointLight(0xffd9a0, 0.8, 6, 1.8); tl.position.set(0.9, 1.2, 6.2); sc.add(tl);
-    this.person(W, 0.3, 7.2, Math.PI, 0xb89a3a, false); W.collide(-0.3, 1.3, 6, 6.8);
+    // a folding chair for the judge
+    const chM = new THREE.MeshLambertMaterial({ color: 0x2a2c32 }); W.mesh(new THREE.BoxGeometry(0.44, 0.04, 0.42), chM, 0.3, 0.46, 7.25); W.mesh(new THREE.BoxGeometry(0.44, 0.42, 0.04), chM, 0.3, 0.72, 7.47);
+    for (const [dx, dz] of [[-0.2, -0.18], [0.2, -0.18], [-0.2, 0.2], [0.2, 0.2]]) W.mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.46, 5), chM, 0.3 + dx, 0.23, 7.25 + dz);
+    this.person(W, 0.3, 7.18, Math.PI, Human.random(777, { top: 'jacket', topCol: '#b89a3a', inner: '#16171c', glasses: true, hat: null, hair: 'pomp', hairCol: '#0b0908', female: false }), 'sit', { collide: false }); W.collide(-0.3, 1.3, 6, 6.8); W.collide(0.05, 0.55, 7.0, 7.5);
+    // the crowd: a circle of people talking, a photographer, a couple by the vending machines
+    const crowd = [[-1.6, 1.0, 0.3, 'talk'], [-0.9, 1.6, -2.4, 'crossed'], [-2.3, 1.7, 2.6, 'pockets', 'can'], [5.1, -1.6, Math.PI + 0.25, 'photo', 'camera'], [6.0, -0.9, Math.PI - 0.6, 'pockets'], [-11.9, 7.4, 0.4, 'talk'], [-11.1, 8.0, -2.6, 'phone', 'phone'], [2.6, 2.6, -1.9, 'akimbo']];
+    crowd.forEach(([cx, cz, ry, pose, prop], k) => this.person(W, cx, cz, ry, Human.random(S.day * 101 + k * 13 + 5), pose, { prop: prop || (pose === 'talk' && k % 2 ? 'can' : null), still: gfxLv() < 2 && k > 2 }));
     W.hotspot(0.5, 1, 6.3, 3.0, () => st.done.style ? 'Szépségverseny: ma már pontoztak' : 'Szépségverseny: nevezek', () => Meet.styleShow(W)).dyn = true;
   }
 };

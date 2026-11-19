@@ -98,6 +98,8 @@ const Save = {
   }
 };
 const save = () => Save.queue(false);
+// graphics level: 0 retró, 1 közepes, 2 éles, 3 ultra
+const gfxLv = () => ({ low: 0, mid: 1, high: 2, ultra: 3 })[S.settings.gfx] ?? 1;
 
 // ---- small helpers
 const fmtY = n => '¥ ' + Math.round(n).toLocaleString('hu-HU').replace(/,/g, ' ');

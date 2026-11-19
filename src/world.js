@@ -15,7 +15,7 @@ function weatherFor(day) {
   const x = Math.sin((day * 1.37 + (S.wseed || 7)) * 12.9898) * 43758.5453, r = x - Math.floor(x);
   return r < 0.5 ? 'clear' : r < 0.64 ? 'fog' : r < 0.8 ? 'damp' : 'rain';
 }
-const weatherNow = () => weatherFor(S.day);
+const weatherNow = () => (S.cheats && WEATHER[S.cheats.wx]) ? S.cheats.wx : weatherFor(S.day);
 // grip multiplier on wet road for the fitted tyre (street tyres have the deepest tread)
 function tireWet(c) { const t = c.parts.tires && PART[c.parts.tires.id]; return (t && t.fx.wet) || 0.84; }
 function wetGrip(c, wk) { const w = WEATHER[wk]; return 1 - (1 - tireWet(c)) * w.wet; }

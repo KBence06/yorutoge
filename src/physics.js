@@ -108,7 +108,7 @@ class PlayerCar {
       this.dmgEngine += 0.0035 * Math.pow(-m, 1.6) * this.dt;
     }
     if (this.blown) T *= 0.08;
-    return T * thr;
+    return T * thr * (this.powK || 1);
   }
   step(dt, inp) {
     this.dt = dt; this.t += dt;
@@ -169,6 +169,8 @@ class PlayerCar {
       this.clutchSlip = false;
       if (Te > sp.clutchCap) { Te = sp.clutchCap; this.clutchSlip = true; this.clutchWear += dt * 0.004 * (Te / sp.clutchCap); this.rpm = Math.min(sp.curve.limiter, this.rpm + 600 * dt); }
     }
+    if (this.god) { this.dmgEngine = 0; this.clutchWear = 0; this.knock = false; }
+    if (this.infNos) this.nosLeft = 1;
     if (this.dmgEngine >= 1 && !this.blown) this.blown = true;
     // automatic gearbox
     if (set.auto && this.shiftT <= 0 && this.gear > 0) {
@@ -281,6 +283,7 @@ class PlayerCar {
     this.y = tp.y;
     this.speed = speed; this.vLong = vLong; this.vLat = vLat;
     this.wear += dt * (0.00035 + this.slide * 0.0022) * sp.tireWear;
+    if (this.god) { this.wear = 0; this.dmgBody = 0; }
     if (!Number.isFinite(this.x + this.z + this.vx + this.vz + this.w + this.h + this.rpm)) this.recover(); else this.okS = this.s;
   }
   // if the numbers ever break, put the car back on the road instead of freezing the run

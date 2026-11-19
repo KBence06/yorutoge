@@ -7,10 +7,12 @@ const Walk = {
     if (typeof Race !== 'undefined' && Race.active) return false;
     const root = $('#walk'); root.hidden = false; root.replaceChildren(); root.className = S.settings.gfx === 'low' ? 'lowres' : '';
     const set = S.settings; let renderer;
-    try { renderer = new THREE.WebGLRenderer({ antialias: set.gfx !== 'low', powerPreference: 'high-performance' }); }
+    try { renderer = new THREE.WebGLRenderer({ antialias: set.gfx !== 'low' && !Post.cfg(set.gfx), powerPreference: 'high-performance' }); }
     catch (e) { root.hidden = true; toast('Nem indult el a 3D-s nézet ezen az eszközön.', 'bad'); return false; }
     this.def = def; this.active = true; this.renderer = renderer;
-    renderer.setPixelRatio(set.gfx === 'low' ? 0.6 : Math.min(set.gfx === 'mid' ? 1.5 : 2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(set.gfx === 'low' ? 0.6 : Math.min(set.gfx === 'mid' ? 1.5 : set.gfx === 'high' ? 1.75 : 2, window.devicePixelRatio || 1));
+    this.post = Post.make(renderer, set.gfx, def.look || { thr: 0.9, thrH: 1.1, knee: 0.35, bloom: 0.85 });
+    if (gfxLv() >= 3) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
     renderer.domElement.className = 'three'; root.append(renderer.domElement);
     renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); toast('Elfogyott a grafikus memória, visszaléptem.', 'bad'); this.close(); }, false);
     this.scene = new THREE.Scene(); this.cam = new THREE.PerspectiveCamera(68, 1, 0.06, 600); this.cam.rotation.order = 'YXZ';
@@ -43,6 +45,39 @@ const Walk = {
   car(c, x, z, ry, opts) {
     const o = Object.assign({ track: this.track, glow: this.glowTex(), renderer: this.renderer, cabin: S.settings.gfx !== 'low', calm: true }, opts || {});
     const m = CarModel.build(c.model, c.paint, c.vis || carVisual(c), o); m.g.position.set(x, 0, z); m.g.rotation.y = ry || 0; this.scene.add(m.g); return m;
+  },
+  // A glossy floor: the room is rendered again from a camera mirrored under the floor, at half size, and blended in
+  // with a little blur and more of it at grazing angles. Éles and Ultra only.
+  reflect(mesh, k, blur) {
+    if (gfxLv() < 2 || !mesh || !mesh.material) return;
+    const r = this.renderer, rt = new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
+    const mcam = new THREE.PerspectiveCamera(), texM = new THREE.Matrix4(), bias = new THREE.Matrix4().set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
+    const texel = new THREE.Vector2(), v = new THREE.Vector2(), dir = new THREE.Vector3(), tgt = new THREE.Vector3(), y0 = mesh.position.y;
+    const m = mesh.material;
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.tRefl = { value: rt.texture }; sh.uniforms.uReflM = { value: texM }; sh.uniforms.uReflK = { value: k }; sh.uniforms.uReflT = { value: texel }; sh.uniforms.uBlur = { value: blur || 1.5 };
+      sh.vertexShader = 'uniform mat4 uReflM;\nvarying vec4 vReflUv;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vReflUv = uReflM * modelMatrix * vec4(transformed, 1.0);');
+      sh.fragmentShader = 'uniform sampler2D tRefl;\nuniform float uReflK;\nuniform float uBlur;\nuniform vec2 uReflT;\nvarying vec4 vReflUv;\n' + sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', [
+        '{ vec2 ruv = vReflUv.xy / vReflUv.w; vec2 o = uReflT * uBlur;',
+        '  vec3 rc = texture2D(tRefl, ruv).rgb * 0.36 + (texture2D(tRefl, ruv + vec2(o.x, o.y)).rgb + texture2D(tRefl, ruv + vec2(-o.x, o.y)).rgb + texture2D(tRefl, ruv + vec2(o.x, -o.y)).rgb + texture2D(tRefl, ruv - o).rgb) * 0.16;',
+        '  float fr = 0.35 + 0.65 * pow(1.0 - clamp(abs(normalize(vViewPosition).z), 0.0, 1.0), 2.0);',
+        '  outgoingLight += rc * uReflK * fr * mix(1.0, 0.55, step(0.5, diffuseColor.r - 0.35)); }',
+        'gl_FragColor = vec4( outgoingLight, diffuseColor.a );'].join('\n'));
+    };
+    m.needsUpdate = true; this.track.push(rt);
+    this.refl = {
+      update: (cam) => {
+        const s = r.getDrawingBufferSize(v), w = Math.max(4, Math.round(s.x * 0.5)), h = Math.max(4, Math.round(s.y * 0.5));
+        if (rt.width !== w || rt.height !== h) { rt.setSize(w, h); texel.set(1 / w, 1 / h); }
+        cam.updateMatrixWorld(); cam.getWorldDirection(dir);
+        mcam.position.set(cam.position.x, 2 * y0 - cam.position.y, cam.position.z);
+        tgt.copy(cam.position).add(dir); tgt.y = 2 * y0 - tgt.y;
+        mcam.up.set(0, 1, 0).applyQuaternion(cam.quaternion); mcam.up.y = -mcam.up.y;
+        mcam.lookAt(tgt); mcam.projectionMatrix.copy(cam.projectionMatrix); mcam.updateMatrixWorld();
+        texM.copy(bias).multiply(mcam.projectionMatrix).multiply(mcam.matrixWorldInverse);
+        mesh.visible = false; r.setRenderTarget(rt); r.clear(); r.render(this.scene, mcam); r.setRenderTarget(null); mesh.visible = true;
+      }
+    };
   },
   // ---- HUD and input
   buildHud() {
@@ -137,7 +172,8 @@ const Walk = {
       if (best !== this.spot || (best && best.dyn)) { this.spot = best; this.hAct.hidden = !best; if (best) this.hAct.textContent = typeof best.label === 'function' ? best.label() : best.label; }
     }
     for (const fn of this.tickers) fn(dt, this.t);
-    this.renderer.render(this.scene, cam);
+    if (this.refl) this.refl.update(cam);
+    if (this.post) this.post.render(this.scene, cam, dt); else this.renderer.render(this.scene, cam);
   },
   pushOut() {
     const p = this.pos, r = 0.32, b = this.bounds;
@@ -157,9 +193,10 @@ const Walk = {
     if (this.ro) this.ro.disconnect();
     if (def && def.cleanup) try { def.cleanup(this); } catch (e) {}
     for (const d of this.track || []) try { d.dispose(); } catch (e) {}
+    if (this.post) { try { this.post.dispose(); } catch (e) {} this.post = null; }
     if (this.renderer) { this.renderer.dispose(); this.renderer.forceContextLoss && this.renderer.forceContextLoss(); }
     CarModel.reset();
-    this.renderer = null; this.scene = null; this.track = null; this._glow = null; this.cine = null; this.seat = null; this.spots = []; this.tickers = []; this.hHint = null;
+    this.refl = null; this.renderer = null; this.scene = null; this.track = null; this._glow = null; this.cine = null; this.seat = null; this.spots = []; this.tickers = []; this.hHint = null;
     const root = $('#walk'); root.replaceChildren(); root.hidden = true;
     if (typeof Garage !== 'undefined') { Garage.visible = UI.scr === 'garage'; Garage.dirty = true; }
     if (!silent) { UI.render(); if (def && def.onClose) def.onClose(); }
